@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="LaborStats.Api/LaborStats.Api.csproj" />
+  <Project Path="LaborStats.Application/LaborStats.Application.csproj" />
+  <Project Path="LaborStats.Domain/LaborStats.Domain.csproj" />
+  <Project Path="LaborStats.Infrastructure/LaborStats.Infrastructure.csproj" />
+</Solution>
