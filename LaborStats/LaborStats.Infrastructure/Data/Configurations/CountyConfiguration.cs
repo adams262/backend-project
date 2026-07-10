@@ -8,7 +8,7 @@ public sealed class CountyConfiguration : IEntityTypeConfiguration<County>
 {
     public void Configure(EntityTypeBuilder<County> builder)
     {
-        builder.ToTable("counties");
+        builder.ToTable("counties", "geo");
         builder.HasKey(c => c.Teryt);
 
         builder.Property(c => c.Teryt)

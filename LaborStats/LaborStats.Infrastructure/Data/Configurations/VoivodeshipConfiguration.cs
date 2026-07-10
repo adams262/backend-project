@@ -8,7 +8,7 @@ public sealed class VoivodeshipConfiguration : IEntityTypeConfiguration<Voivodes
 {
     public void Configure(EntityTypeBuilder<Voivodeship> builder)
     {
-        builder.ToTable("voivodeships");
+        builder.ToTable("voivodeships", "geo");
         builder.HasKey(v => v.Teryt);
 
         builder.Property(v => v.Teryt)
