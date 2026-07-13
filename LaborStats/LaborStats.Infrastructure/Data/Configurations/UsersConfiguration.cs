@@ -13,7 +13,7 @@ public sealed class UsersConfiguration : IEntityTypeConfiguration<Users>
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.Id)
-            .HasDefaultValue("uuidv7()");
+            .HasDefaultValueSql("uuidv7()");
 
         builder.Property(u => u.Login)
             .IsRequired()
