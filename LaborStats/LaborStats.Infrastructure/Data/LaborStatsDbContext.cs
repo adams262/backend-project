@@ -20,6 +20,9 @@ public sealed class LaborStatsDbContext : DbContext
     public DbSet<Professions> Profession => Set<Professions>();
     public DbSet<ProfessionGroups> ProfessionGroup => Set<ProfessionGroups>();
 
+    public DbSet<Users> User => Set<Users>();
+    public DbSet<Roles> Role => Set<Roles>();
+
     public LaborStatsDbContext(DbContextOptions<LaborStatsDbContext> options)
         : base(options)
     {
