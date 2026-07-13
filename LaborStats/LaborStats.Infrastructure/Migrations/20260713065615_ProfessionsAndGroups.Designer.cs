@@ -3,6 +3,7 @@ using System;
 using LaborStats.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LaborStats.Infrastructure.Migrations
 {
     [DbContext(typeof(LaborStatsDbContext))]
-    partial class LaborStatsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713065615_ProfessionsAndGroups")]
+    partial class ProfessionsAndGroups
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
