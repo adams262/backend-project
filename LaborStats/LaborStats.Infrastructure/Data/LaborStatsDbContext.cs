@@ -15,8 +15,10 @@ public sealed class LaborStatsDbContext : DbContext
     }
 
     public DbSet<Voivodeship> Voivodeships => Set<Voivodeship>();
-
     public DbSet<County> Counties => Set<County>();
+
+    public DbSet<Professions> Profession => Set<Professions>();
+    public DbSet<ProfessionGroups> ProfessionGroup => Set<ProfessionGroups>();
 
     public LaborStatsDbContext(DbContextOptions<LaborStatsDbContext> options)
         : base(options)
