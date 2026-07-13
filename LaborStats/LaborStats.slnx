@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
   <Project Path="LaborStats.Api/LaborStats.Api.csproj" />
   <Project Path="LaborStats.Application/LaborStats.Application.csproj" />
   <Project Path="LaborStats.Domain/LaborStats.Domain.csproj" />
