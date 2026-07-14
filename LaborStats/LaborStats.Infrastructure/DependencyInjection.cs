@@ -1,4 +1,5 @@
 using LaborStats.Infrastructure.Data;
+using LaborStats.Infrastructure.Data.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,6 +14,8 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString);
             options.UseSnakeCaseNamingConvention();
         });
+
+        services.AddScoped<AdminSeeder>();
 
         return services;
     }

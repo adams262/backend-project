@@ -1,4 +1,5 @@
 using LaborStats.Infrastructure;
+using LaborStats.Infrastructure.Data.Seed;
 using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,13 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+}
+
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    AdminSeeder adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
+
+    await adminSeeder.SeedAsync();
 }
 
 app.UseHttpsRedirection();
