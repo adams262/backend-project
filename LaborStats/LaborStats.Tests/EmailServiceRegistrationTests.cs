@@ -104,7 +104,7 @@ public class EmailServiceRegistrationTests
             EnableSsl = true,
         };
 
-        var factory = FluentEmailEmailService.CreateSmtpClientFactory(options);
+        var factory = SmtpClientFactory.Create(options);
         using var client = factory();
 
         Assert.Equal("smtp.example.com", client.Host);
@@ -126,7 +126,7 @@ public class EmailServiceRegistrationTests
             EnableSsl = false,
         };
 
-        var factory = FluentEmailEmailService.CreateSmtpClientFactory(options);
+        var factory = SmtpClientFactory.Create(options);
         using var client = factory();
 
         Assert.True(client.UseDefaultCredentials);
@@ -141,7 +141,7 @@ public class EmailServiceRegistrationTests
             SmtpPort = 25,
         };
 
-        var factory = FluentEmailEmailService.CreateSmtpClientFactory(options);
+        var factory = SmtpClientFactory.Create(options);
 
         using var first = factory();
         using var second = factory();

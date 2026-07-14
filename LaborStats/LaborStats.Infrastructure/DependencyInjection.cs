@@ -29,17 +29,22 @@ public static class DependencyInjection
             .Bind(section)
             .Validate(o =>
                 !string.IsNullOrWhiteSpace(o.FromEmail) &&
-                !string.IsNullOrWhiteSpace(o.SmtpHost),
-                "Email:FromEmail and Email:SmtpHost are required configuration values.")
+                !string.IsNullOrWhiteSpace(o.SmtpHost) &&
+                HasConsistentCredentials(o),
+                "Email:FromEmail and Email:SmtpHost are required configuration values, and SMTP credentials (SmtpUsername and SmtpPassword) must be both set or both empty.")
             .ValidateOnStart();
 
         var options = section.Get<EmailOptions>() ?? new EmailOptions();
 
-        services.AddFluentEmail(options.FromEmail, options.FromName)
-            .AddSmtpSender(FluentEmailEmailService.CreateSmtpClientFactory(options));
+        services
+            .AddFluentEmail(options.FromEmail, options.FromName)
+            .AddSmtpSender(SmtpClientFactory.Create(options));
 
-        services.AddScoped<IEmailService, FluentEmailEmailService>();
-
-        return services;
+        return services.AddTransient<IEmailService, FluentEmailEmailService>();
     }
+
+    private static bool HasConsistentCredentials(EmailOptions options) =>
+        SmtpClientFactory.HasValidCredentials(options) ||
+        (string.IsNullOrWhiteSpace(options.SmtpUsername) &&
+            string.IsNullOrWhiteSpace(options.SmtpPassword));
 }
