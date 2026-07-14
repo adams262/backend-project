@@ -45,7 +45,7 @@ public class EmailServiceRegistrationTests
     }
 
     [Fact]
-    public void AddEmailServices_RegistersScopedSmtpSenderFromFactory()
+    public void AddEmailServices_RegistersNewSmtpSenderPerScope()
     {
         var services = new ServiceCollection();
         services.AddEmailServices(BuildConfiguration(ValidEmailConfig));
@@ -81,6 +81,46 @@ public class EmailServiceRegistrationTests
         {
             ["Email:SmtpHost"] = "smtp.example.com",
             ["Email:SmtpPort"] = "25",
+        };
+
+        var services = new ServiceCollection();
+        services.AddEmailServices(BuildConfiguration(invalidConfig));
+
+        using var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<IOptions<EmailOptions>>();
+
+        Assert.Throws<OptionsValidationException>(() => options.Value);
+    }
+
+    [Fact]
+    public void AddEmailServices_SurfacesInvalidConfigWhenOnlyUsernameSet()
+    {
+        var invalidConfig = new Dictionary<string, string?>
+        {
+            ["Email:FromEmail"] = "noreply@laborstats.local",
+            ["Email:SmtpHost"] = "smtp.example.com",
+            ["Email:SmtpPort"] = "25",
+            ["Email:SmtpUsername"] = "user",
+        };
+
+        var services = new ServiceCollection();
+        services.AddEmailServices(BuildConfiguration(invalidConfig));
+
+        using var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<IOptions<EmailOptions>>();
+
+        Assert.Throws<OptionsValidationException>(() => options.Value);
+    }
+
+    [Fact]
+    public void AddEmailServices_SurfacesInvalidConfigWhenOnlyPasswordSet()
+    {
+        var invalidConfig = new Dictionary<string, string?>
+        {
+            ["Email:FromEmail"] = "noreply@laborstats.local",
+            ["Email:SmtpHost"] = "smtp.example.com",
+            ["Email:SmtpPort"] = "25",
+            ["Email:SmtpPassword"] = "pwd",
         };
 
         var services = new ServiceCollection();
