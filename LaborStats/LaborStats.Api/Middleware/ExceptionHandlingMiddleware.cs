@@ -1,0 +1,108 @@
+﻿
+using System.Net;
+using FluentValidation;
+using LaborStats.Domain.Exceptions;
+using Microsoft.AspNetCore.Mvc;
+
+namespace LaborStats.Api.Middleware
+{
+    public class ExceptionHandlingMiddleware : IMiddleware
+    {
+        private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+        private readonly IHostEnvironment _environment;
+
+        public ExceptionHandlingMiddleware(
+            ILogger<ExceptionHandlingMiddleware> logger,
+            IHostEnvironment environment)
+        {
+            _logger = logger;
+            _environment = environment;
+        }
+
+        public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+        {
+            try
+            {
+                await next(context);
+            }
+            catch (Exception e)
+            {
+                var requestPath = $"{context.Request.Method} {context.Request.Path}";
+
+                switch (e)
+                {
+                    case ValidationException validationException:
+                        var errors = string.Join(" | ", validationException.Errors
+                            .Select(err => $"{err.PropertyName}: {err.ErrorMessage}"));
+                        _logger.LogWarning("Validation failed on {RequestPath}. Errors: {Errors}", requestPath, errors);
+                        break;
+
+                    case AppException ae:
+                        _logger.LogWarning(ae, "Handled domain exception on {RequestPath}: {Message}", requestPath, ae.Message);
+                        break;
+
+                    default:
+                        _logger.LogError(e, "Unhandled exception on {RequestPath}", requestPath);
+                        break;
+                }
+
+                await HandleExceptionAsync(context, e);
+            }
+        }
+
+        private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+        {
+            var (statusCode, title) = MapException(exception);
+
+            context.Response.ContentType = "application/problem+json";
+            context.Response.StatusCode = statusCode;
+         
+            if (exception is ValidationException fluentValidationException)
+            {
+                var validationErrors = fluentValidationException.Errors
+                    .GroupBy(e => e.PropertyName, e => e.ErrorMessage)
+                    .ToDictionary(g => g.Key, g => g.ToArray());
+
+                var validationProblemDetails = new ValidationProblemDetails(validationErrors)
+                {
+                    Status = statusCode,
+                    Title = title,
+                    Detail = exception.Message,
+                    Instance = context.Request.Path,
+                    Type = $"https://httpstatuses.io/{statusCode}"
+                };
+                validationProblemDetails.Extensions["traceId"] = context.TraceIdentifier;
+
+                await context.Response.WriteAsJsonAsync(validationProblemDetails);
+                return;
+            }
+
+            var problemDetails = new ProblemDetails
+            {
+                Status = statusCode,
+                Title = title,
+                Detail = _environment.IsDevelopment() || statusCode < (int)HttpStatusCode.InternalServerError
+                    ? exception.Message
+                    : "Wystąpił nieoczekiwany błąd serwera.",
+                Instance = context.Request.Path,
+                Type = $"https://httpstatuses.io/{statusCode}"
+            };
+
+            problemDetails.Extensions["traceId"] = context.TraceIdentifier;
+
+            if (_environment.IsDevelopment() && statusCode >= (int)HttpStatusCode.InternalServerError)
+            {
+                problemDetails.Extensions["stackTrace"] = exception.StackTrace;
+            }
+
+            await context.Response.WriteAsJsonAsync(problemDetails);
+        }
+
+        private static (int StatusCode, string Title) MapException(Exception exception) => exception switch
+        {
+            NotFoundException => ((int)HttpStatusCode.NotFound, "Nie znaleziono zasobu"),
+            ValidationException => ((int)HttpStatusCode.BadRequest, "Błąd walidacji"),
+            _ => ((int)HttpStatusCode.InternalServerError, "Wystąpił nieoczekiwany błąd serwera")
+        };
+    }
+}
