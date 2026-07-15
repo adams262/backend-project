@@ -9,7 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
         "Missing required connection string: ConnectionStrings:DefaultConnection");
+
 builder.Services.AddInfrastructure(connectionString, builder.Configuration);
+builder.Services.AddEmailServices(builder.Configuration);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
