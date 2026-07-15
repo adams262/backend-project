@@ -1,6 +1,8 @@
 using FluentValidation;
 using LaborStats.Api.Middleware;
 using LaborStats.Infrastructure;
+using LaborStats.Infrastructure.Data.Seed;
+using Microsoft.Extensions.DependencyInjection;
 using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
         "Missing required connection string: ConnectionStrings:DefaultConnection");
-builder.Services.AddInfrastructure(connectionString);
+
+builder.Services.AddInfrastructure(connectionString, builder.Configuration);
 builder.Services.AddEmailServices(builder.Configuration);
 
 builder.Services.AddControllers();
@@ -27,6 +30,15 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+}
+
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var adminSeeder =
+        scope.ServiceProvider.GetRequiredService<AdminSeeder>();
+
+    await adminSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();

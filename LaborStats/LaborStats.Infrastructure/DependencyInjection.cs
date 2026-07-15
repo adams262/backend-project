@@ -1,6 +1,8 @@
+using LaborStats.Infrastructure.Options;
+using LaborStats.Infrastructure.Data;
+using LaborStats.Infrastructure.Data.Seed;
 using LaborStats.Application.Abstractions;
 using LaborStats.Application.Options;
-using LaborStats.Infrastructure.Data;
 using LaborStats.Infrastructure.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,7 +12,7 @@ namespace LaborStats.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString, IConfiguration configuration)
     {
         services.AddDbContext<LaborStatsDbContext>(options =>
         {
@@ -18,7 +20,10 @@ public static class DependencyInjection
             options.UseSnakeCaseNamingConvention();
         });
 
-        return services;
+        services.AddOptions<AdminUserOptions>()
+            .Bind(configuration.GetSection(AdminUserOptions.SectionName));
+
+        return services.AddScoped<AdminSeeder>();
     }
 
     public static IServiceCollection AddEmailServices(this IServiceCollection services, IConfiguration configuration)
