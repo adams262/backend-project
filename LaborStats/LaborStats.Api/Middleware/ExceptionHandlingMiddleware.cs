@@ -53,6 +53,7 @@ namespace LaborStats.Api.Middleware
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             var (statusCode, title) = MapException(exception);
+            var traceId = context.TraceIdentifier;
 
             context.Response.ContentType = "application/problem+json";
             context.Response.StatusCode = statusCode;
@@ -71,7 +72,7 @@ namespace LaborStats.Api.Middleware
                     Instance = context.Request.Path,
                     Type = $"https://httpstatuses.io/{statusCode}"
                 };
-                validationProblemDetails.Extensions["traceId"] = context.TraceIdentifier;
+                validationProblemDetails.Extensions["traceId"] = traceId;
 
                 await context.Response.WriteAsJsonAsync(validationProblemDetails);
                 return;
@@ -83,12 +84,12 @@ namespace LaborStats.Api.Middleware
                 Title = title,
                 Detail = _environment.IsDevelopment() || statusCode < (int)HttpStatusCode.InternalServerError
                     ? exception.Message
-                    : "Wystąpił nieoczekiwany błąd serwera.",
+                    : "An unexpected server error occurred.",
                 Instance = context.Request.Path,
                 Type = $"https://httpstatuses.io/{statusCode}"
             };
 
-            problemDetails.Extensions["traceId"] = context.TraceIdentifier;
+            problemDetails.Extensions["traceId"] = traceId;
 
             if (_environment.IsDevelopment() && statusCode >= (int)HttpStatusCode.InternalServerError)
             {
@@ -100,9 +101,9 @@ namespace LaborStats.Api.Middleware
 
         private static (int StatusCode, string Title) MapException(Exception exception) => exception switch
         {
-            NotFoundException => ((int)HttpStatusCode.NotFound, "Nie znaleziono zasobu"),
-            ValidationException => ((int)HttpStatusCode.BadRequest, "Błąd walidacji"),
-            _ => ((int)HttpStatusCode.InternalServerError, "Wystąpił nieoczekiwany błąd serwera")
+            NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
+            ValidationException => ((int)HttpStatusCode.BadRequest, "Validation error"),
+            _ => ((int)HttpStatusCode.InternalServerError, "An unexpected server error occured")
         };
     }
 }

@@ -11,5 +11,5 @@ public class NotFoundException : AppException
     public NotFoundException(string message) : base(message) { }
 
     public NotFoundException(string entityName, object key)
-        : base($"Encja \"{entityName}\" o kluczu \"{key}\" nie została znaleziona.") { }
+        : base($"Entity \"{entityName}\" with key \"{key}\" was not found.") { }
 }
