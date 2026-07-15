@@ -1,3 +1,5 @@
+using FluentValidation;
+using LaborStats.Api.Middleware;
 using LaborStats.Infrastructure;
 using LaborStats.Infrastructure.Data.Seed;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +17,10 @@ builder.Services.AddEmailServices(builder.Configuration);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+builder.Services.AddTransient<ExceptionHandlingMiddleware>();
+
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -26,6 +32,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var adminSeeder =
@@ -33,6 +40,8 @@ await using (var scope = app.Services.CreateAsyncScope())
 
     await adminSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
