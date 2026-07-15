@@ -1,45 +1,46 @@
-﻿using LaborStats.Domain.Entities;
+﻿using LaborStats.Infrastructure.Options;
+using LaborStats.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace LaborStats.Infrastructure.Data.Seed;
 
-public sealed class AdminSeeder
+public sealed class AdminSeeder(
+    LaborStatsDbContext context,
+    IOptions<AdminUserOptions> options)
 {
-    private readonly LaborStatsDbContext _context;
-    private readonly IConfiguration _configuration;
+    private readonly AdminUserOptions _options = options.Value;
 
-    public AdminSeeder(LaborStatsDbContext context, IConfiguration configuration)
+    public async Task SeedAsync(
+        CancellationToken cancellationToken = default)
     {
-        _context = context;
-        _configuration = configuration;
-    }
+        bool userExists = await context.User
+            .AnyAsync(u => u.Login == _options.Login, cancellationToken);
 
-    public async Task SeedAsync()
-    {
-        string? login = _configuration["AdminUser:Login"];
-
-        if (await _context.User.AnyAsync(u => u.Login == login))
-            return;
-
-        Roles adminRole = await _context.Role.SingleAsync(r => r.Name == "Admin");
-
-        var user = new Users
+        if (userExists)
         {
-            Name = _configuration["AdminUser:Name"]!,
-            Login = login!,
-            Email = _configuration["AdminUser:Email"]!,
-            RoleId = adminRole.Id,
+            return;
+        }
+
+        Roles? adminRole = await context.Role
+            .SingleOrDefaultAsync(role => role.Name == "Admin", cancellationToken) ?? throw new InvalidOperationException("Admin role not found in the database.");
+
+        Users user = new()
+        {
+            Name = _options.Name,
+            Login = _options.Login,
+            Email = _options.Email,
+            RoleId = adminRole.Id
         };
 
-        var hasher = new PasswordHasher<Users>();
+        user.PasswordHash = new PasswordHasher<Users>()
+            .HashPassword(user, _options.Password);
 
-        user.PasswordHash = hasher.HashPassword(user, _configuration["AdminUser:Password"]!);
+        context.User.Add(user);
 
-        _context.User.Add(user);
-
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync(cancellationToken);
     }
 
 }

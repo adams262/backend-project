@@ -6,6 +6,12 @@ namespace LaborStats.Infrastructure.Data.Configurations;
 
 public sealed class RolesConfiguration : IEntityTypeConfiguration<Roles>
 {
+    private static readonly Guid AdminRoleId =
+        Guid.Parse("d2db6b7d-e4c2-4a50-85d1-71bd12557cf4");
+
+    private static readonly Guid BaseUserRoleId =
+        Guid.Parse("7fc7f05a-03a2-4e3e-8611-4e160ed685c1");
+
     public void Configure(EntityTypeBuilder<Roles> builder)
     {
         builder.ToTable("roles", "usr");
@@ -20,8 +26,15 @@ public sealed class RolesConfiguration : IEntityTypeConfiguration<Roles>
             .HasMaxLength(50);
 
         builder.HasData(
-            new Roles { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Name = "Admin" },
-            new Roles { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Name = "BaseUser" }
-        );
+            new Roles
+            {
+                Id = AdminRoleId,
+                Name = "Admin"
+            },
+            new Roles
+            {
+                Id = BaseUserRoleId,
+                Name = "BaseUser"
+            });
     }
 }
