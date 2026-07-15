@@ -1,9 +1,10 @@
-using LaborStats.Infrastructure.Options;
-using LaborStats.Infrastructure.Data;
-using LaborStats.Infrastructure.Data.Seed;
 using LaborStats.Application.Abstractions;
 using LaborStats.Application.Options;
+using LaborStats.Infrastructure.Data;
+using LaborStats.Infrastructure.Data.Seed;
 using LaborStats.Infrastructure.Email;
+using LaborStats.Infrastructure.Options;
+using LaborStats.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,13 @@ public static class DependencyInjection
 
         services.AddOptions<AdminUserOptions>()
             .Bind(configuration.GetSection(AdminUserOptions.SectionName));
+
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName));
+
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services.AddScoped<AdminSeeder>();
     }
@@ -48,8 +56,12 @@ public static class DependencyInjection
         return services.AddTransient<IEmailService, FluentEmailEmailService>();
     }
 
+
+
     private static bool HasConsistentCredentials(EmailOptions options) =>
         SmtpClientFactory.HasValidCredentials(options) ||
         (string.IsNullOrWhiteSpace(options.SmtpUsername) &&
             string.IsNullOrWhiteSpace(options.SmtpPassword));
+
+
 }
