@@ -8,7 +8,7 @@ public sealed class  ProfessionsConfiguration : IEntityTypeConfiguration<Profess
 {
     public void Configure(EntityTypeBuilder<Professions> builder)
     {
-        builder.ToTable("Professions", "prof");
+        builder.ToTable("professions", "prof");
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Id)

@@ -8,7 +8,7 @@ public sealed class ProfessionGroupsConfiguration : IEntityTypeConfiguration<Pro
 {
     public void Configure(EntityTypeBuilder<ProfessionGroups> builder)
     {
-        builder.ToTable("ProfessionGroups", "prof");
+        builder.ToTable("profession_groups", "prof");
         builder.HasKey(pg => pg.Id);
 
         builder.Property(pg => pg.Id)
