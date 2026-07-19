@@ -16,50 +16,52 @@ using Microsoft.IdentityModel.Tokens;
 using LaborStats.Infrastructure.Options;
 using Microsoft.EntityFrameworkCore;
 
-namespace LaborStats.Infrastructure.Services
+namespace LaborStats.Infrastructure.Services;
+
+public sealed class AuthService(LaborStatsDbContext context, IOptions<JwtOptions> jwtOptions, TimeProvider timeProvider, IPasswordHasher<Users> passwordHasher) : IAuthService
 {
-    public sealed class AuthService(LaborStatsDbContext context, IOptions<JwtOptions> jwtOptions) : IAuthService
+   
+    private readonly JwtOptions _jwtOptions = jwtOptions.Value;
+
+    public async Task<LoginResponse?> LoginAsync(
+        LoginRequest request,
+        CancellationToken cancellationToken = default)
     {
-        private static readonly PasswordHasher<Users> Hasher = new();
-        private readonly JwtOptions _jwtOptions = jwtOptions.Value;
+        Users? user = await context.User
+            .AsNoTracking()
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Login == request.Login, cancellationToken);
 
-        public async Task<LoginResponse?> LoginAsync(
-            LoginRequest request,
-            CancellationToken cancellationToken = default)
+        if (user is null)
+            return null;
+
+        var verification = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+
+        if (verification == PasswordVerificationResult.Failed)
+            return null;
+
+        var expiresAt = timeProvider.GetUtcNow().Add(_jwtOptions.TokenLifetime);
+
+        var claims = new[]
         {
-            Users? user = await context.User
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Login == request.Login, cancellationToken);
-
-            if (user is null)
-                return null;
-
-            var verification = Hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
-            if (verification == PasswordVerificationResult.Failed)
-                return null;
-
-            var expiresAt = DateTime.UtcNow.AddHours(_jwtOptions.ExpiryHours);
-
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Login),
-            new Claim(ClaimTypes.Role, user.Role.Name)
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim(ClaimTypes.Name, user.Login),
+        new Claim(ClaimTypes.Role, user.Role.Name)
         };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken(
-                issuer: _jwtOptions.Issuer,
-                audience: _jwtOptions.Audience,
-                claims: claims,
-                expires: expiresAt,
-                signingCredentials: credentials);
+        var token = new JwtSecurityToken(
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
+            claims: claims,
+            expires: expiresAt.UtcDateTime,
+            signingCredentials: credentials);
 
-            string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+        string tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
-            return new LoginResponse(tokenString, expiresAt);
-        }
+        return new LoginResponse(tokenString, expiresAt.UtcDateTime);
     }
 }
+

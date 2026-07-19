@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace LaborStats.Application.Roles;
+namespace LaborStats.Domain.Exceptions;
 
-public sealed record CreateRoleRequest(string Name);
-
-public sealed record RoleResponse(Guid Id, string Name);
-
+public class ConflictException : AppException
+{
+    public ConflictException(string message) : base(message) { }
+}

@@ -6,13 +6,13 @@ using System.Collections.Generic;
 using System.Text;
 using LaborStats.Application.Users;
 
-namespace LaborStats.Application.Abstractions
+namespace LaborStats.Application.Abstractions;
+
+public interface IUserService
 {
-    public interface IUserService
-    {
-        Task<UserResponse> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
-        Task<IReadOnlyList<UserResponse>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<UserDetailResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-        Task<bool> AssignRoleAsync(Guid userId, AssignRoleRequest request, CancellationToken cancellationToken = default);
-    }
+    Task<UserResponse> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<UserDetailResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task AssignRoleAsync(Guid userId, AssignRoleRequest request, CancellationToken cancellationToken = default);
 }
+

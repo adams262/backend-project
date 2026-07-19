@@ -102,6 +102,7 @@ namespace LaborStats.Api.Middleware
         private static (int StatusCode, string Title) MapException(Exception exception) => exception switch
         {
             NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
+            ConflictException => ((int)HttpStatusCode.Conflict, "Conflict"),
             ValidationException => ((int)HttpStatusCode.BadRequest, "Validation error"),
             _ => ((int)HttpStatusCode.InternalServerError, "An unexpected server error occured")
         };

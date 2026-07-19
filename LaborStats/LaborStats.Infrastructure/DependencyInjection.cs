@@ -8,6 +8,8 @@ using LaborStats.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using LaborStats.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace LaborStats.Infrastructure;
 
@@ -25,7 +27,13 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(AdminUserOptions.SectionName));
 
         services.AddOptions<JwtOptions>()
-            .Bind(configuration.GetSection(JwtOptions.SectionName));
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .Validate(o => o.TokenLifetime > TimeSpan.Zero, "Jwt:TokenLifetime must be greater than zero.")
+            .ValidateOnStart();
+
+        services.AddSingleton(TimeProvider.System);
+
+        services.AddScoped<IPasswordHasher<Users>, PasswordHasher<Users>>();
 
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, UserService>();

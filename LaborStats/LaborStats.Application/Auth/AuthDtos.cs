@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace LaborStats.Application.Auth
-{
-    public sealed record LoginRequest(string Login, string Password);
+namespace LaborStats.Application.Auth;
 
-    public sealed record LoginResponse(string Token, DateTime ExpiresAt);
-}
+public sealed record LoginRequest(string Login, string Password);
+
+public sealed record LoginResponse(string Token, DateTime ExpiresAt);
+

@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Text;
 using LaborStats.Application.Auth;
 
-namespace LaborStats.Application.Abstractions
+namespace LaborStats.Application.Abstractions;
+
+public interface IAuthService
 {
-    public interface IAuthService
-    {
-        Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
-    }
+    Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
 }
+

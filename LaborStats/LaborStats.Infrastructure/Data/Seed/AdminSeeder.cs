@@ -9,7 +9,8 @@ namespace LaborStats.Infrastructure.Data.Seed;
 
 public sealed class AdminSeeder(
     LaborStatsDbContext context,
-    IOptions<AdminUserOptions> options)
+    IOptions<AdminUserOptions> options,
+    IPasswordHasher<Users> passwordHasher)
 {
     private readonly AdminUserOptions _options = options.Value;
 
@@ -35,8 +36,7 @@ public sealed class AdminSeeder(
             RoleId = adminRole.Id
         };
 
-        user.PasswordHash = new PasswordHasher<Users>()
-            .HashPassword(user, _options.Password);
+        user.PasswordHash = passwordHasher.HashPassword(user, _options.Password);
 
         context.User.Add(user);
 

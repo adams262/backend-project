@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Scalar.AspNetCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using LaborStats.Application.Roles;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -20,6 +22,8 @@ builder.Services.AddEmailServices(builder.Configuration);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleRequestValidator>();
 
 builder.Services.AddTransient<ExceptionHandlingMiddleware>();
 
