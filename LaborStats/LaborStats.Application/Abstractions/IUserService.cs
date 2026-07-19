@@ -14,5 +14,7 @@ public interface IUserService
     Task<IReadOnlyList<UserResponse>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<UserDetailResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task AssignRoleAsync(Guid userId, AssignRoleRequest request, CancellationToken cancellationToken = default);
+    Task ChangeOwnPasswordAsync(Guid userId, ChangeOwnPasswordRequest request, CancellationToken cancellationToken = default);
+    Task SetPasswordAsync(Guid userId, SetUserPasswordRequest request, CancellationToken cancellationToken = default);
 }
 

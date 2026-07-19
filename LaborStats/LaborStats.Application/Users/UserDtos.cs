@@ -31,3 +31,6 @@ public sealed record UserDetailResponse(
 
 public sealed record AssignRoleRequest(Guid RoleId);
 
+public sealed record ChangeOwnPasswordRequest(string CurrentPassword, string NewPassword);
+
+public sealed record SetUserPasswordRequest(string NewPassword);

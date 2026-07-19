@@ -112,5 +112,45 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
         await context.SaveChangesAsync(cancellationToken);
         
     }
+    public async Task ChangeOwnPasswordAsync(
+    Guid userId,
+    ChangeOwnPasswordRequest request,
+    CancellationToken cancellationToken = default)
+    {
+        Users? user = await context.User
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new NotFoundException(nameof(Users), userId);
+        }
+
+        var verification = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword);
+
+        if (verification == PasswordVerificationResult.Failed)
+        {
+            throw new ConflictException("Current password is incorrect.");
+        }
+
+        user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SetPasswordAsync(
+        Guid userId,
+        SetUserPasswordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        Users? user = await context.User
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new NotFoundException(nameof(Users), userId);
+        }
+
+        user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+        await context.SaveChangesAsync(cancellationToken);
+    }
 }
 
