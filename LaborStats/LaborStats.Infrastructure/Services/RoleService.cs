@@ -45,8 +45,8 @@ public sealed class RoleService(LaborStatsDbContext context) : IRoleService
     }
 
     public async Task<RoleResponse?> GetByIdAsync(
-    Guid id,
-    CancellationToken cancellationToken = default)
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await context.Role
             .Where(r => r.Id == id)

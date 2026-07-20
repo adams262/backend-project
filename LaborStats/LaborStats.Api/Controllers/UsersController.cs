@@ -40,7 +40,6 @@ public sealed class UsersController(
         CreateUserRequest request,
         CancellationToken cancellationToken)
     {
-
         await createUserValidator.ValidateAndThrowAsync(request, cancellationToken);
 
         var result = await userService.CreateAsync(request, cancellationToken);
@@ -61,8 +60,8 @@ public sealed class UsersController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<UserResponse>>> GetAll(
-    CancellationToken cancellationToken) =>
-    Ok(await userService.GetAllAsync(cancellationToken));
+        CancellationToken cancellationToken) =>
+        Ok(await userService.GetAllAsync(cancellationToken));
 
     /// <summary>
     /// Returns the details of a single user. Requires administrator privileges.

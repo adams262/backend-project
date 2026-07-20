@@ -22,9 +22,9 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
         CancellationToken cancellationToken = default)
     {
         var roleName = await context.Role
-        .Where(r => r.Id == request.RoleId)
-        .Select(r => r.Name)
-        .FirstOrDefaultAsync(cancellationToken);
+            .Where(r => r.Id == request.RoleId)
+            .Select(r => r.Name)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (roleName is null)
         {
@@ -62,8 +62,6 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
 
         context.User.Add(user);
         await context.SaveChangesAsync(cancellationToken);
-
-        
 
         return new UserResponse(user.Id, user.Name, user.Login, user.Email, roleName);
     }

@@ -44,9 +44,9 @@ public sealed class AuthService(LaborStatsDbContext context, IOptions<JwtOptions
 
         var claims = new[]
         {
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new Claim(ClaimTypes.Name, user.Login),
-        new Claim(ClaimTypes.Role, user.Role.Name)
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Login),
+            new Claim(ClaimTypes.Role, user.Role.Name)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key));
