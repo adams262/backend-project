@@ -23,6 +23,9 @@ public sealed class LaborStatsDbContext : DbContext
     public DbSet<Users> User => Set<Users>();
     public DbSet<Roles> Role => Set<Roles>();
 
+    public DbSet<ImportHistory> ImportHistories => Set<ImportHistory>();
+    public DbSet<LaborStatRecord> LaborStatRecords => Set<LaborStatRecord>();
+
     public LaborStatsDbContext(DbContextOptions<LaborStatsDbContext> options)
         : base(options)
     {
