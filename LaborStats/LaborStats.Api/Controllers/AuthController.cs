@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LaborStats.Api.Controllers;
 
+/// <summary>
+/// Handles user authentication and token lifecycle.
+/// </summary>
 [ApiController]
 [Route("api/auth")]
 public sealed class AuthController(IAuthService authService) : ControllerBase
