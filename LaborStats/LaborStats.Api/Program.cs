@@ -57,6 +57,28 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+var corsSection = builder.Configuration.GetSection("Cors");
+var allowedOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>()
+    ?? throw new InvalidOperationException(
+        "Missing required configuration: Cors:AllowedOrigins");
+
+if (allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "At least one allowed origin must be configured under Cors:AllowedOrigins");
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LaborStatsCors", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -78,6 +100,8 @@ await using (var scope = app.Services.CreateAsyncScope())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors("LaborStatsCors");
 
 app.UseAuthentication();
 
