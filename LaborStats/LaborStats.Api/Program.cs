@@ -1,13 +1,14 @@
 using System.Text;
 using FluentValidation;
 using LaborStats.Api.Middleware;
+using LaborStats.Api.OpenApi;
+using LaborStats.Application.Roles;
 using LaborStats.Infrastructure;
 using LaborStats.Infrastructure.Data.Seed;
-using Microsoft.Extensions.DependencyInjection;
-using Scalar.AspNetCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using LaborStats.Application.Roles;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +29,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleRequestValidator>
 builder.Services.AddTransient<ExceptionHandlingMiddleware>();
 
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<JwtBearerSchemeTransformer>();
+});
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]
