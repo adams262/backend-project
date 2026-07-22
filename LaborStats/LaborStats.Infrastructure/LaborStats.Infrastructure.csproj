@@ -16,6 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Data\Seed\SeedProfessionsAndGroupsData.sql">
+      <LogicalName>LaborStats.Infrastructure.Data.Seed.SeedProfessionsAndGroupsData.sql</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" />
     <PackageReference Include="FluentEmail.Smtp" />
