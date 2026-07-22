@@ -22,18 +22,19 @@ public sealed class JwtBearerSchemeTransformer(
             return;
         }
 
-        var securityScheme = new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.Http,
-            Scheme = "Bearer",
-            BearerFormat = "JWT",
-            In = ParameterLocation.Header,
-            Description = "Paste the JWT token without the 'Bearer' prefix."
-        };
-
         document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-        document.Components.SecuritySchemes["Bearer"] = securityScheme;
+        document.Components.SecuritySchemes =
+            new Dictionary<string, IOpenApiSecurityScheme>
+            {
+                [JwtBearerDefaults.AuthenticationScheme] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = JwtBearerDefaults.AuthenticationScheme,
+                    In = ParameterLocation.Header,
+                    BearerFormat = "JWT",
+                    Description = "Paste the JWT token without the 'Bearer' prefix."
+                }
+            };
 
         if (document.Paths is null)
         {
@@ -52,7 +53,7 @@ public sealed class JwtBearerSchemeTransformer(
                 operation.Security ??= [];
                 operation.Security.Add(new OpenApiSecurityRequirement
                 {
-                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                    [new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document)] = []
                 });
             }
         }
