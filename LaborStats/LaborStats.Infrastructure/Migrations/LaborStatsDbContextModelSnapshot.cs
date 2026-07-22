@@ -2745,10 +2745,9 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasColumnName("import_end_date")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<string>("Period")
-                        .IsRequired()
+                    b.Property<byte>("Period")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("smallint")
                         .HasColumnName("period");
 
                     b.Property<int>("ProcessedRecordsCount")
@@ -2760,6 +2759,10 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("voivodeship");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
 
                     b.HasKey("Id")
                         .HasName("pk_import_histories");

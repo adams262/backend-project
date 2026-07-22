@@ -21,7 +21,7 @@ namespace LaborStats.Infrastructure.Data.Configurations
             builder.Property(x => x.Voivodeship)
                 .HasMaxLength(100);
 
-            builder.Property(x => x.Powiat)
+            builder.Property(x => x.County)
                 .HasMaxLength(100);
 
             builder.Property(x => x.OccupationCode)

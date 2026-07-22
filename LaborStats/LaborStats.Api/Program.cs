@@ -1,13 +1,14 @@
 using System.Text;
 using FluentValidation;
 using LaborStats.Api.Middleware;
+using LaborStats.Application.Roles;
 using LaborStats.Infrastructure;
 using LaborStats.Infrastructure.Data.Seed;
-using Microsoft.Extensions.DependencyInjection;
-using Scalar.AspNetCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using LaborStats.Application.Roles;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ builder.Services.AddTransient<ExceptionHandlingMiddleware>();
 
 
 builder.Services.AddOpenApi();
+
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]
@@ -52,6 +54,10 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services
+    .AddHealthChecks()
+    .AddNpgSql(connectionString);
 
 var app = builder.Build();
 
@@ -81,4 +87,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.MapHealthChecks("/health");
+
+app.Run();  

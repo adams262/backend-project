@@ -10,7 +10,7 @@ namespace LaborStats.Domain.Entities
         public Guid ImportHistoryId { get; set; }
         public ImportHistory ImportHistory { get; set; } = null!;
         public string Voivodeship { get; set; } = null!;
-        public string Powiat { get; set; } = null!;
+        public string County { get; set; } = null!;
         public string OccupationCode { get; set; } = null!;
         public string InsuranceTitleCode { get; set; } = null!;
         public int? TotalContractsCount { get; set; }
