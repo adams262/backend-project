@@ -1,6 +1,7 @@
 using System.Text;
 using FluentValidation;
 using LaborStats.Api.Middleware;
+using LaborStats.Api.OpenApi;
 using LaborStats.Application.Roles;
 using LaborStats.Infrastructure;
 using LaborStats.Infrastructure.Data.Seed;
@@ -29,7 +30,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleRequestValidator>
 builder.Services.AddTransient<ExceptionHandlingMiddleware>();
 
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<JwtBearerSchemeTransformer>();
+});
 
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -58,6 +62,27 @@ builder.Services.AddAuthorization();
 builder.Services
     .AddHealthChecks()
     .AddNpgSql(connectionString);
+var corsSection = builder.Configuration.GetSection("Cors");
+var allowedOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>()
+    ?? throw new InvalidOperationException(
+        "Missing required configuration: Cors:AllowedOrigins");
+
+if (allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "At least one allowed origin must be configured under Cors:AllowedOrigins");
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LaborStatsCors", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -80,6 +105,8 @@ await using (var scope = app.Services.CreateAsyncScope())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors("LaborStatsCors");
 
 app.UseAuthentication();
 

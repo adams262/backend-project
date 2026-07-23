@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LaborStats.Api.Controllers;
 
+/// <summary>
+/// Manages users, role assignments, and password changes.
+/// </summary>
 [ApiController]
 [Route("api/users")]
 public sealed class UsersController(

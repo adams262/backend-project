@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LaborStats.Api.Controllers;
 
+/// <summary>
+/// Manages application roles.
+/// </summary>
 [ApiController]
 [Route("api/roles")]
 [Authorize(Roles = "Admin")]
