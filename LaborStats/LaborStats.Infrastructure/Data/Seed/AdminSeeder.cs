@@ -2,7 +2,6 @@
 using LaborStats.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace LaborStats.Infrastructure.Data.Seed;
@@ -25,8 +24,9 @@ public sealed class AdminSeeder(
             return;
         }
 
-        Roles? adminRole = await context.Role
-            .SingleOrDefaultAsync(role => role.Name == "Admin", cancellationToken) ?? throw new InvalidOperationException("Admin role not found in the database.");
+        Roles adminRole = await context.Role
+            .SingleOrDefaultAsync(role => role.Name == "Admin", cancellationToken)
+            ?? throw new InvalidOperationException("Admin role not found in the database.");
 
         Users user = new()
         {
