@@ -15,16 +15,16 @@ namespace LaborStats.Api.Controllers;
 public sealed class AuthController(IAuthService authService) : ControllerBase
 {
     /// <summary>
-    /// Logs in a user and returns a JWT token along with its expiration time.
+    /// Logs in a user and returns an Access Token along with a Refresh Token.
     /// </summary>
     /// <param name="request">The user's login and password.</param>
     /// <param name="cancellationToken">Cancellation token for the request.</param>
     /// <response code="200">Returns the JWT token after a successful login.</response>
     /// <response code="401">Invalid login or password.</response>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<LoginResponse>> Login(
+    public async Task<ActionResult<AuthResponse>> Login(
         LoginRequest request,
         CancellationToken cancellationToken)
     {
@@ -37,5 +37,35 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
         return Ok(result);
     }
-}
 
+    /// <summary>
+    /// Refreshes the access token using a valid refresh token.
+    /// </summary>
+    [HttpPost("refresh")]
+    public async Task<ActionResult<RefreshTokenResponse>> RefreshToken(
+        RefreshTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await authService.RefreshTokenAsync(request, cancellationToken);
+        if (result is null)
+        {
+            return Unauthorized();
+        }
+        return Ok(result);
+    }
+    /// <summary>
+    /// Revokes the supplied refresh token and ends the user's authenticated session.
+    /// </summary>
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(
+        RevokeTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await authService.RevokeTokenAsync(request, cancellationToken);
+        if (!result)
+        {
+            return Unauthorized();
+        }
+        return NoContent();
+    }
+}

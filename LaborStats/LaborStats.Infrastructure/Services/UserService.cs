@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LaborStats.Infrastructure.Services;
 
-public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Users> passwordHasher) : IUserService
+public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Users> passwordHasher, TimeProvider timeProvider) : IUserService
 {
 
     public async Task<UserResponse> CreateAsync(
@@ -131,6 +131,7 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
         }
 
         user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+        await RevokeAllUserTokensAsync(userId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
 
@@ -148,7 +149,20 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
         }
 
         user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+        await RevokeAllUserTokensAsync (userId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
-}
 
+    private async Task RevokeAllUserTokensAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var activeTokens = await context.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+
+        var now = timeProvider.GetUtcNow();
+        foreach (var token in activeTokens)
+        {
+            token.RevokedAt = now;
+        }
+    }
+}
