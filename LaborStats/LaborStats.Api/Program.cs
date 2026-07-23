@@ -6,6 +6,7 @@ using LaborStats.Application.Roles;
 using LaborStats.Infrastructure;
 using LaborStats.Infrastructure.Data.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -34,6 +35,7 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<JwtBearerSchemeTransformer>();
 });
 
+
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]
     ?? throw new InvalidOperationException("Missing required configuration: Jwt:Key");
@@ -57,6 +59,9 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services
+    .AddHealthChecks()
+    .AddNpgSql(connectionString);
 var corsSection = builder.Configuration.GetSection("Cors");
 var allowedOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>()
     ?? throw new InvalidOperationException(
@@ -109,4 +114,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.MapHealthChecks("/health");
+
+app.Run();  
