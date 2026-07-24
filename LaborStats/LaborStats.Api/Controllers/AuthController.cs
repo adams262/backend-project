@@ -61,7 +61,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         RevokeTokenRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await authService.RevokeTokenAsync(request, cancellationToken);
+        var result = await authService.TryRevokeTokenAsync(request, cancellationToken);
         if (!result)
         {
             return Unauthorized();

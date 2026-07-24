@@ -64,6 +64,7 @@ public sealed class AuthService(LaborStatsDbContext context, IOptions<JwtOptions
 
         return new AuthResponse(accessToken, accessTokenExpiresAt, rawRefreshToken, refreshTokenExpiresAt);
     }
+
     public async Task<RefreshTokenResponse?> RefreshTokenAsync(
     RefreshTokenRequest request,
     CancellationToken cancellationToken = default)
@@ -76,7 +77,12 @@ public sealed class AuthService(LaborStatsDbContext context, IOptions<JwtOptions
             .ThenInclude(u => u.Role)
             .FirstOrDefaultAsync(t => t.TokenHash == hashedToken, cancellationToken);
 
-        if (tokenEntity is null || tokenEntity.ExpiresAt <= now || tokenEntity.RevokedAt is not null)
+        var isTokenInvalid =
+            tokenEntity is null ||
+            tokenEntity.ExpiresAt <= now ||
+            tokenEntity.RevokedAt is not null;
+
+        if (isTokenInvalid)
         {
             return null;
         }
@@ -90,43 +96,40 @@ public sealed class AuthService(LaborStatsDbContext context, IOptions<JwtOptions
         return new RefreshTokenResponse(newAccessToken, newAccessTokenExpiresAt);
     }
 
-    public async Task<bool> RevokeTokenAsync(
+    public async Task<bool> TryRevokeTokenAsync(
         RevokeTokenRequest request,
         CancellationToken cancellationToken = default)
     {
-        string hashedToken = HashToken(request.RefreshToken);
+        string tokenHash = HashToken(request.RefreshToken);
+        DateTimeOffset now = timeProvider.GetUtcNow();
 
-        var tokenEntity = await context.RefreshTokens
-            .FirstOrDefaultAsync(t => t.TokenHash == hashedToken, cancellationToken);
+        int affectedRows = await context.RefreshTokens
+    .Where(token =>
+        token.TokenHash == tokenHash &&
+        token.RevokedAt == null)
+    .ExecuteUpdateAsync(
+        setters => setters.SetProperty(
+            token => token.RevokedAt,
+            now),
+        cancellationToken);
 
-        if (tokenEntity is null || tokenEntity.RevokedAt is not null)
-        {
-            return false;
-        }
-
-        tokenEntity.RevokedAt = timeProvider.GetUtcNow();
-        await context.SaveChangesAsync(cancellationToken);
-
-        return true;
+        return affectedRows == 1;
     }
+
     private static string GenerateRefreshToken()
     {
-        var randomNumber = new byte[64];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
-        }
+        byte[] bytes = RandomNumberGenerator.GetBytes(64);
+        return Base64UrlEncoder.Encode(bytes);
     }
+
     private static string HashToken(string token)
     {
-        using (var sha256 = SHA256.Create())
-        {
-            var bytes = Encoding.UTF8.GetBytes(token);
-            var hash = sha256.ComputeHash(bytes);
-            return Convert.ToHexString(hash);
-        }
+        byte[] bytes = Encoding.UTF8.GetBytes(token);
+        byte[] hash = SHA256.HashData(bytes);
+
+        return Convert.ToHexString(hash);
     }
+
     private string GenerateJwtToken(Users user, DateTimeOffset expiresAt)
     {
         var claims = new[]
