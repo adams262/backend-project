@@ -10,9 +10,15 @@
   <ItemGroup>
 	  <PackageReference Include="coverlet.collector" />
 	  <PackageReference Include="FluentEmail.Smtp" />
+	  <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
 	  <PackageReference Include="Microsoft.NET.Test.Sdk" />
+	  <PackageReference Include="Respawn" />
+	  <PackageReference Include="Testcontainers" />
+	  <PackageReference Include="Testcontainers.PostgreSql" />
 	  <PackageReference Include="xunit" />
 	  <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LaborStats.Api\LaborStats.Api.csproj" />
+    <ProjectReference Include="..\LaborStats.Infrastructure\LaborStats.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
