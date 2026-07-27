@@ -4,5 +4,7 @@ namespace LaborStats.Application.Abstractions;
 
 public interface IImportService
 {
-    Task ProcessImportAsync(ImportRequestDto dto, string createdBy, CancellationToken cancellationToken = default);
+    Task ProcessImportAsync(ImportRequestDto dto, 
+            string createdBy, CancellationToken 
+            cancellationToken = default);
 }

@@ -24,7 +24,7 @@ builder.Services.AddEmailServices(builder.Configuration);
 
 builder.Services.AddControllers();
 
-builder.Services.AddScoped<LaborStats.Application.Abstractions.IImportService, LaborStats.Infrastructure.Services.ImportService>();
+builder.Services.AddScoped<IImportService, ImportService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleRequestValidator>();

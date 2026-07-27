@@ -43,6 +43,6 @@ public sealed class ImportsController(IImportService importService) : Controller
 
         await importService.ProcessImportAsync(request, username, cancellationToken);
 
-        return Ok(new { Message = "Import został pomyślnie przekazany do przetworzenia." });
+        return Ok(new { Message = "Import successfully queued for processing." });
     }
 }
