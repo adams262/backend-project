@@ -25,6 +25,7 @@ public sealed class LaborStatsDbContext : DbContext
 
     public DbSet<ImportHistory> ImportHistories => Set<ImportHistory>();
     public DbSet<LaborStatRecord> LaborStatRecords => Set<LaborStatRecord>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     public LaborStatsDbContext(DbContextOptions<LaborStatsDbContext> options)
         : base(options)

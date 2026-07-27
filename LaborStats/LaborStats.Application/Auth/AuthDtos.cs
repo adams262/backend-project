@@ -11,3 +11,15 @@ public sealed record LoginRequest(string Login, string Password);
 
 public sealed record LoginResponse(string Token, DateTime ExpiresAt);
 
+public sealed record AuthResponse(
+    string AccessToken,
+    DateTimeOffset AccessTokenExpiresAt,
+    string RefreshToken,
+    DateTimeOffset RefreshTokenExpiresAt
+);
+public sealed record RefreshTokenRequest(string RefreshToken);
+public sealed record RefreshTokenResponse(
+    string AccessToken,
+    DateTimeOffset AccessTokenExpiresAt
+);
+public sealed record RevokeTokenRequest(string RefreshToken);

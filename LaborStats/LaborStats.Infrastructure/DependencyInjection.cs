@@ -28,7 +28,7 @@ public static class DependencyInjection
 
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
-            .Validate(o => o.TokenLifetime > TimeSpan.Zero, "Jwt:TokenLifetime must be greater than zero.")
+            .Validate(o => o.AccessTokenExpirationMinutes > 0, "Jwt:AccessTokenExpirationMinutes must be greater than zero.")
             .ValidateOnStart();
 
         services.AddSingleton(TimeProvider.System);
