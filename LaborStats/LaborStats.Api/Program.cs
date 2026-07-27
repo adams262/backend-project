@@ -4,11 +4,13 @@ using LaborStats.Api.Middleware;
 using LaborStats.Api.OpenApi;
 using LaborStats.Application.Roles;
 using LaborStats.Infrastructure;
+using LaborStats.Infrastructure.Data;
 using LaborStats.Infrastructure.Data.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -86,20 +88,29 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+{
+    CancellationToken cancellationToken = app.Lifetime.ApplicationStopping;
+    LaborStatsDbContext dbContext = scope.ServiceProvider.GetRequiredService<LaborStatsDbContext>();
+    AdminSeeder adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
+
+    try
+    {
+        await dbContext.Database.MigrateAsync(cancellationToken);
+        await adminSeeder.SeedAsync(cancellationToken);
+    }
+    catch (Exception exception)
+    {
+        app.Logger.LogCritical(exception, "An error occurred while migrating or seeding the database.");
+        throw;
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
-}
-
-
-await using (var scope = app.Services.CreateAsyncScope())
-{
-    var adminSeeder =
-        scope.ServiceProvider.GetRequiredService<AdminSeeder>();
-
-    await adminSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
