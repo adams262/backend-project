@@ -8,6 +8,8 @@ using LaborStats.Infrastructure.Data;
 using LaborStats.Infrastructure.Data.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using LaborStats.Application.Abstractions;
+using LaborStats.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +27,11 @@ builder.Services.AddInfrastructure(connectionString, builder.Configuration);
 builder.Services.AddEmailServices(builder.Configuration);
 
 builder.Services.AddControllers();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+builder.Services.AddScoped<IImportService, ImportService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleRequestValidator>();
