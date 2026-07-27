@@ -26,6 +26,9 @@ builder.Services.AddEmailServices(builder.Configuration);
 
 builder.Services.AddControllers();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
 builder.Services.AddScoped<IImportService, ImportService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 

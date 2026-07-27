@@ -13,7 +13,9 @@ namespace LaborStats.Api.Controllers;
 [ApiController]
 [Route("api/imports")]
 [Authorize(Roles = "Admin")]
-public sealed class ImportsController(IImportService importService) : ControllerBase
+public sealed class ImportsController(
+    IImportService importService,
+    ICurrentUserService currentUserService) : ControllerBase
 {
     /// <summary>
     /// Imports labor statistics file for processing. Requires administrator privileges.
@@ -30,16 +32,16 @@ public sealed class ImportsController(IImportService importService) : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Import([FromForm] ImportRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Import(
+        [FromForm] ImportRequestDto request, 
+        CancellationToken cancellationToken)
     {
         if (request.File is null || request.File.Length == 0)
         {
             return BadRequest("Source file needed!");
         }
 
-        var username = User.FindFirstValue(ClaimTypes.Name) 
-                    ?? User.FindFirstValue(ClaimTypes.Email) 
-                    ?? "Admin";
+        var username = currentUserService.GetUsername() ?? "Admin";
 
         await importService.ProcessImportAsync(request, username, cancellationToken);
 
