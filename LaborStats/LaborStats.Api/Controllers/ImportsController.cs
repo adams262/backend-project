@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LaborStats.Api.Controllers;
 
+/// <summary>
+/// Controller responsible for handling import operations.
+/// </summary>
 [ApiController]
 [Route("api/imports")]
 [Authorize(Roles = "Admin")]
