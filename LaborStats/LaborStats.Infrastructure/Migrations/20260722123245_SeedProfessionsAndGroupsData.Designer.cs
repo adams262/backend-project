@@ -3,6 +3,7 @@ using System;
 using LaborStats.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LaborStats.Infrastructure.Migrations
 {
     [DbContext(typeof(LaborStatsDbContext))]
-    partial class LaborStatsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260722123245_SeedProfessionsAndGroupsData")]
+    partial class SeedProfessionsAndGroupsData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2719,120 +2722,6 @@ namespace LaborStats.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("LaborStats.Domain.Entities.ImportHistory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("uuidv7()");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("file_name");
-
-                    b.Property<DateTime>("ImportEndDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("import_end_date")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<byte>("Period")
-                        .HasMaxLength(50)
-                        .HasColumnType("smallint")
-                        .HasColumnName("period");
-
-                    b.Property<int>("ProcessedRecordsCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("processed_records_count");
-
-                    b.Property<string>("Voivodeship")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("voivodeship");
-
-                    b.Property<int>("Year")
-                        .HasColumnType("integer")
-                        .HasColumnName("year");
-
-                    b.HasKey("Id")
-                        .HasName("pk_import_histories");
-
-                    b.ToTable("import_histories", "import");
-                });
-
-            modelBuilder.Entity("LaborStats.Domain.Entities.LaborStatRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("uuidv7()");
-
-                    b.Property<string>("County")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("county");
-
-                    b.Property<string>("DataType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("data_type");
-
-                    b.Property<Guid>("ImportHistoryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("import_history_id");
-
-                    b.Property<string>("InsuranceTitleCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("insurance_title_code");
-
-                    b.Property<int?>("LongTermContractsCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("long_term_contracts_count");
-
-                    b.Property<int?>("NewlyRegisteredCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("newly_registered_count");
-
-                    b.Property<string>("OccupationCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("occupation_code");
-
-                    b.Property<int?>("TotalContractsCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("total_contracts_count");
-
-                    b.Property<string>("Voivodeship")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("voivodeship");
-
-                    b.HasKey("Id")
-                        .HasName("pk_labor_stat_records");
-
-                    b.HasIndex("ImportHistoryId")
-                        .HasDatabaseName("ix_labor_stat_records_import_history_id");
-
-                    b.ToTable("labor_stat_records", "import");
-                });
-
             modelBuilder.Entity("LaborStats.Domain.Entities.ProfessionGroups", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2951,55 +2840,6 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasDatabaseName("ix_professions_profession_group_id");
 
                     b.ToTable("professions", "prof");
-                });
-
-            modelBuilder.Entity("LaborStats.Domain.Entities.RefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("uuidv7()");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<DateTimeOffset?>("LastUsedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_used_at");
-
-                    b.Property<DateTimeOffset?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("revoked_at");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("token_hash");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_refresh_tokens");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique()
-                        .HasDatabaseName("ix_refresh_tokens_token_hash");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_refresh_tokens_user_id");
-
-                    b.ToTable("refresh_tokens", "auth");
                 });
 
             modelBuilder.Entity("LaborStats.Domain.Entities.Roles", b =>
@@ -3200,18 +3040,6 @@ namespace LaborStats.Infrastructure.Migrations
                     b.Navigation("Voivodeship");
                 });
 
-            modelBuilder.Entity("LaborStats.Domain.Entities.LaborStatRecord", b =>
-                {
-                    b.HasOne("LaborStats.Domain.Entities.ImportHistory", "ImportHistory")
-                        .WithMany()
-                        .HasForeignKey("ImportHistoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_labor_stat_records_import_histories_import_history_id");
-
-                    b.Navigation("ImportHistory");
-                });
-
             modelBuilder.Entity("LaborStats.Domain.Entities.Professions", b =>
                 {
                     b.HasOne("LaborStats.Domain.Entities.ProfessionGroups", "ProfessionGroup")
@@ -3222,18 +3050,6 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasConstraintName("fk_professions_profession_groups_profession_group_id");
 
                     b.Navigation("ProfessionGroup");
-                });
-
-            modelBuilder.Entity("LaborStats.Domain.Entities.RefreshToken", b =>
-                {
-                    b.HasOne("LaborStats.Domain.Entities.Users", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_refresh_tokens_user_user_id");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LaborStats.Domain.Entities.Users", b =>

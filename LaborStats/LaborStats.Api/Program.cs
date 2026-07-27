@@ -1,13 +1,15 @@
 using System.Text;
 using FluentValidation;
 using LaborStats.Api.Middleware;
+using LaborStats.Api.OpenApi;
+using LaborStats.Application.Roles;
 using LaborStats.Infrastructure;
 using LaborStats.Infrastructure.Data.Seed;
-using Microsoft.Extensions.DependencyInjection;
-using Scalar.AspNetCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using LaborStats.Application.Roles;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +32,11 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleRequestValidator>
 builder.Services.AddTransient<ExceptionHandlingMiddleware>();
 
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<JwtBearerSchemeTransformer>();
+});
+
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]
@@ -55,6 +61,31 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services
+    .AddHealthChecks()
+    .AddNpgSql(connectionString);
+var corsSection = builder.Configuration.GetSection("Cors");
+var allowedOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>()
+    ?? throw new InvalidOperationException(
+        "Missing required configuration: Cors:AllowedOrigins");
+
+if (allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "At least one allowed origin must be configured under Cors:AllowedOrigins");
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LaborStatsCors", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -77,10 +108,14 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
+app.UseCors("LaborStatsCors");
+
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.MapHealthChecks("/health");
+
+app.Run();  

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LaborStats.Infrastructure.Migrations
 {
     [DbContext(typeof(LaborStatsDbContext))]
-    [Migration("20260722073456_ImportHistory")]
-    partial class ImportHistory
+    [Migration("20260723144642_ImportHistoryAndRefreshTokens")]
+    partial class ImportHistoryAndRefreshTokens
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -2748,10 +2748,9 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasColumnName("import_end_date")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<string>("Period")
-                        .IsRequired()
+                    b.Property<byte>("Period")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("smallint")
                         .HasColumnName("period");
 
                     b.Property<int>("ProcessedRecordsCount")
@@ -2763,6 +2762,10 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("voivodeship");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
 
                     b.HasKey("Id")
                         .HasName("pk_import_histories");
@@ -2777,6 +2780,12 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id")
                         .HasDefaultValueSql("uuidv7()");
+
+                    b.Property<string>("County")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("county");
 
                     b.Property<string>("DataType")
                         .IsRequired()
@@ -2807,12 +2816,6 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("occupation_code");
-
-                    b.Property<string>("Powiat")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("powiat");
 
                     b.Property<int?>("TotalContractsCount")
                         .HasColumnType("integer")
@@ -2951,6 +2954,55 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasDatabaseName("ix_professions_profession_group_id");
 
                     b.ToTable("professions", "prof");
+                });
+
+            modelBuilder.Entity("LaborStats.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("uuidv7()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTimeOffset?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_tokens_token_hash");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_refresh_tokens_user_id");
+
+                    b.ToTable("refresh_tokens", "auth");
                 });
 
             modelBuilder.Entity("LaborStats.Domain.Entities.Roles", b =>
@@ -3173,6 +3225,18 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasConstraintName("fk_professions_profession_groups_profession_group_id");
 
                     b.Navigation("ProfessionGroup");
+                });
+
+            modelBuilder.Entity("LaborStats.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("LaborStats.Domain.Entities.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_user_user_id");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LaborStats.Domain.Entities.Users", b =>
