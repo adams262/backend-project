@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LaborStats.Infrastructure.Services;
 
-public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Users> passwordHasher) : IUserService
+public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Users> passwordHasher, TimeProvider timeProvider) : IUserService
 {
 
     public async Task<UserResponse> CreateAsync(
@@ -96,7 +96,7 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
         if (user is null)
         {
             throw new NotFoundException(nameof(Users), userId);
-        }    
+        }
 
         bool roleExists = await context.Role
             .AnyAsync(r => r.Id == request.RoleId, cancellationToken);
@@ -108,7 +108,7 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
 
         user.RoleId = request.RoleId;
         await context.SaveChangesAsync(cancellationToken);
-        
+
     }
     public async Task ChangeOwnPasswordAsync(
     Guid userId,
@@ -131,6 +131,7 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
         }
 
         user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+        await RevokeAllUserTokensAsync(userId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
 
@@ -148,7 +149,20 @@ public sealed class UserService(LaborStatsDbContext context, IPasswordHasher<Use
         }
 
         user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+        await RevokeAllUserTokensAsync(userId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
-}
 
+    private async Task RevokeAllUserTokensAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow();
+
+        await context.RefreshTokens
+            .Where(token => token.UserId == userId && token.RevokedAt == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(
+                    token => token.RevokedAt,
+                    now),
+                cancellationToken);
+    }
+}
