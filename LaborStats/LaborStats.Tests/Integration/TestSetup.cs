@@ -3,6 +3,7 @@ using LaborStats.Infrastructure.Data;
 using LaborStats.Infrastructure.Data.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Cryptography;
 using Respawn;
 using Respawn.Graph;
 
@@ -12,6 +13,10 @@ public sealed class TestSetup : IAsyncLifetime
 {
     private readonly Dictionary<string, string?>
         _previousEnvironmentVariables = [];
+
+    private readonly string _jwtKey =
+    Convert.ToBase64String(
+        RandomNumberGenerator.GetBytes(24));
 
     private CustomWebAppFactory<Program>? _webApiFactory;
     private HttpClient? _webApiClient;
@@ -36,7 +41,6 @@ public sealed class TestSetup : IAsyncLifetime
 
         await ApplyMigrationsAsync(connectionString);
 
-
         SetTestEnvironmentVariables(connectionString);
 
         try
@@ -44,7 +48,6 @@ public sealed class TestSetup : IAsyncLifetime
             _webApiFactory =
                 new CustomWebAppFactory<Program>(
                     connectionString);
-
 
             _webApiClient =
                 _webApiFactory.CreateClient();
@@ -107,15 +110,11 @@ public sealed class TestSetup : IAsyncLifetime
                 new RespawnerOptions
                 {
                     DbAdapter = DbAdapter.Postgres,
-
-
                     SchemasToInclude =
                     [
                         "usr",
                         "import"
                     ],
-
-
                     TablesToIgnore =
                     [
                         new Table("usr", "roles")
@@ -176,6 +175,10 @@ public sealed class TestSetup : IAsyncLifetime
         SetEnvironmentVariable(
             "ConnectionStrings__DefaultConnection",
             connectionString);
+
+        SetEnvironmentVariable(
+            "Jwt__Key",
+            _jwtKey);
     }
 
     private void SetEnvironmentVariable(

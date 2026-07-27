@@ -15,12 +15,12 @@ public sealed class TestAuthHandler(
         loggerFactory,
         encoder)
 {
-    public const string AuthenticationScheme = "TestScheme";
-    public const string UserIdHeader = "Test-User-Id";
-    public const string UserNameHeader = "Test-User-Name";
-    public const string RoleHeader = "Test-Role";
-    public const string UnauthenticatedHeader = "Test-Unauthenticated";
-    public const string DefaultUserId = "f81ea23c-4962-4044-80c3-cc3bb4586228";
+    internal const string AuthenticationScheme = "TestScheme";
+    internal const string UserIdHeader = "Test-User-Id";
+    private const string UserNameHeader = "Test-User-Name";
+    internal const string RoleHeader = "Test-Role";
+    internal const string UnauthenticatedHeader = "Test-Unauthenticated";
+    private const string DefaultUserId = "f81ea23c-4962-4044-80c3-cc3bb4586228";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {

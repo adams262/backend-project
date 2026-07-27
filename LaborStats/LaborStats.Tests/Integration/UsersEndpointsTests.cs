@@ -1,6 +1,7 @@
 ﻿using System.Net;
-using System.Text.Json;
 using System.Net.Http.Json;
+using LaborStats.Application.Roles;
+using LaborStats.Application.Users;
 
 namespace LaborStats.Tests.Integration;
 
@@ -13,29 +14,19 @@ public sealed class UsersEndpointsTests(
     public async Task GetAll_WhenAuthenticatedAsAdmin_ReturnsOkAndUsers()
     {
         using HttpResponseMessage response =
-            await Fixture.WebApiClient.GetAsync("/api/users");
-
-        string content =
-            await response.Content.ReadAsStringAsync();
-
-        Assert.True(
-            response.StatusCode == HttpStatusCode.OK,
-            $"Expected 200 OK, but received " +
-            $"{(int)response.StatusCode} {response.StatusCode}. " +
-            $"Response: {content}");
-
-        Assert.False(string.IsNullOrWhiteSpace(content));
-
-        using JsonDocument document =
-            JsonDocument.Parse(content);
+            await Fixture.WebApiClient.GetAsync(
+                "/api/users");
 
         Assert.Equal(
-            JsonValueKind.Array,
-            document.RootElement.ValueKind);
+            HttpStatusCode.OK,
+            response.StatusCode);
 
-        Assert.True(
-            document.RootElement.GetArrayLength() > 0,
-            "The users collection should contain the seeded administrator.");
+        UserResponse[]? users =
+            await response.Content
+                .ReadFromJsonAsync<UserResponse[]>();
+
+        Assert.NotNull(users);
+        Assert.NotEmpty(users);
     }
 
     [Fact]
@@ -61,29 +52,23 @@ public sealed class UsersEndpointsTests(
             await Fixture.WebApiClient.GetAsync(
                 $"/api/users/{userId}");
 
-        string content =
-            await response.Content.ReadAsStringAsync();
+        Assert.Equal(
+            HttpStatusCode.OK,
+            response.StatusCode);
 
-        Assert.True(
-            response.StatusCode == HttpStatusCode.OK,
-            $"Expected 200 OK, but received " +
-            $"{(int)response.StatusCode} {response.StatusCode}. " +
-            $"Response: {content}");
+        UserDetailResponse? user =
+            await response.Content
+                .ReadFromJsonAsync<UserDetailResponse>();
 
-        using JsonDocument document =
-            JsonDocument.Parse(content);
+        Assert.NotNull(user);
 
         Assert.Equal(
             userId,
-            document.RootElement
-                .GetProperty("id")
-                .GetGuid());
+            user.Id);
 
         Assert.Equal(
             login,
-            document.RootElement
-                .GetProperty("login")
-                .GetString());
+            user.Login);
     }
 
     [Fact]
@@ -164,105 +149,52 @@ public sealed class UsersEndpointsTests(
                     RoleId = roleId
                 });
 
-        string createContent =
-            await createResponse.Content.ReadAsStringAsync();
+        Assert.Equal(
+            HttpStatusCode.Created,
+            createResponse.StatusCode);
 
-        Assert.True(
-            createResponse.StatusCode == HttpStatusCode.Created,
-            $"Expected 201 Created, but received " +
-            $"{(int)createResponse.StatusCode} " +
-            $"{createResponse.StatusCode}. " +
-            $"Response: {createContent}");
+        Assert.NotNull(
+            createResponse.Headers.Location);
 
-        Assert.NotNull(createResponse.Headers.Location);
+        UserResponse? createdUser =
+            await createResponse.Content
+                .ReadFromJsonAsync<UserResponse>();
 
-        using JsonDocument createDocument =
-            JsonDocument.Parse(createContent);
-
-        Guid userId =
-            createDocument.RootElement
-                .GetProperty("id")
-                .GetGuid();
+        Assert.NotNull(createdUser);
 
         Assert.Equal(
             login,
-            createDocument.RootElement
-                .GetProperty("login")
-                .GetString());
+            createdUser.Login);
 
         Assert.Equal(
             email,
-            createDocument.RootElement
-                .GetProperty("email")
-                .GetString());
+            createdUser.Email);
 
         using HttpResponseMessage getResponse =
             await Fixture.WebApiClient.GetAsync(
-                $"/api/users/{userId}");
-
-        string getContent =
-            await getResponse.Content.ReadAsStringAsync();
-
-        Assert.True(
-            getResponse.StatusCode == HttpStatusCode.OK,
-            $"Expected 200 OK, but received " +
-            $"{(int)getResponse.StatusCode} " +
-            $"{getResponse.StatusCode}. " +
-            $"Response: {getContent}");
-
-        using JsonDocument getDocument =
-            JsonDocument.Parse(getContent);
+                $"/api/users/{createdUser.Id}");
 
         Assert.Equal(
-            userId,
-            getDocument.RootElement
-                .GetProperty("id")
-                .GetGuid());
+            HttpStatusCode.OK,
+            getResponse.StatusCode);
+
+        UserDetailResponse? returnedUser =
+            await getResponse.Content
+                .ReadFromJsonAsync<UserDetailResponse>();
+
+        Assert.NotNull(returnedUser);
+
+        Assert.Equal(
+            createdUser.Id,
+            returnedUser.Id);
 
         Assert.Equal(
             login,
-            getDocument.RootElement
-                .GetProperty("login")
-                .GetString());
+            returnedUser.Login);
 
         Assert.Equal(
             roleId,
-            getDocument.RootElement
-                .GetProperty("roleId")
-                .GetGuid());
-    }
-
-    private async Task<Guid> GetRoleIdAsync(
-    string roleName)
-    {
-        using HttpResponseMessage response =
-            await Fixture.WebApiClient.GetAsync(
-                "/api/roles");
-
-        string content =
-            await response.Content.ReadAsStringAsync();
-
-        Assert.True(
-            response.StatusCode == HttpStatusCode.OK,
-            $"Expected 200 OK, but received " +
-            $"{(int)response.StatusCode} " +
-            $"{response.StatusCode}. " +
-            $"Response: {content}");
-
-        using JsonDocument document =
-            JsonDocument.Parse(content);
-
-        JsonElement role =
-            document.RootElement
-                .EnumerateArray()
-                .Single(element =>
-                    element
-                        .GetProperty("name")
-                        .GetString() == roleName);
-
-        return role
-            .GetProperty("id")
-            .GetGuid();
+            returnedUser.RoleId);
     }
 
     [Fact]
@@ -295,15 +227,9 @@ public sealed class UsersEndpointsTests(
                     RoleId = roleId
                 });
 
-        string content =
-            await response.Content.ReadAsStringAsync();
-
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Conflict,
-            $"Expected 409 Conflict, but received " +
-            $"{(int)response.StatusCode} " +
-            $"{response.StatusCode}. " +
-            $"Response: {content}");
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            response.StatusCode);
     }
 
     [Fact]
@@ -333,39 +259,27 @@ public sealed class UsersEndpointsTests(
                     RoleId = adminRoleId
                 });
 
-        string assignContent =
-            await assignResponse.Content.ReadAsStringAsync();
-
-        Assert.True(
-            assignResponse.StatusCode ==
+        Assert.Equal(
             HttpStatusCode.NoContent,
-            $"Expected 204 No Content, but received " +
-            $"{(int)assignResponse.StatusCode} " +
-            $"{assignResponse.StatusCode}. " +
-            $"Response: {assignContent}");
+            assignResponse.StatusCode);
 
         using HttpResponseMessage getResponse =
             await Fixture.WebApiClient.GetAsync(
                 $"/api/users/{userId}");
 
-        string getContent =
-            await getResponse.Content.ReadAsStringAsync();
+        Assert.Equal(
+            HttpStatusCode.OK,
+            getResponse.StatusCode);
 
-        Assert.True(
-            getResponse.StatusCode == HttpStatusCode.OK,
-            $"Expected 200 OK, but received " +
-            $"{(int)getResponse.StatusCode} " +
-            $"{getResponse.StatusCode}. " +
-            $"Response: {getContent}");
+        UserDetailResponse? returnedUser =
+            await getResponse.Content
+                .ReadFromJsonAsync<UserDetailResponse>();
 
-        using JsonDocument document =
-            JsonDocument.Parse(getContent);
+        Assert.NotNull(returnedUser);
 
         Assert.Equal(
             adminRoleId,
-            document.RootElement
-                .GetProperty("roleId")
-                .GetGuid());
+            returnedUser.RoleId);
     }
 
     [Fact]
@@ -423,16 +337,9 @@ public sealed class UsersEndpointsTests(
             await Fixture.WebApiClient.SendAsync(
                 changeRequest);
 
-        string changeContent =
-            await changeResponse.Content.ReadAsStringAsync();
-
-        Assert.True(
-            changeResponse.StatusCode ==
+        Assert.Equal(
             HttpStatusCode.NoContent,
-            $"Expected 204 No Content, but received " +
-            $"{(int)changeResponse.StatusCode} " +
-            $"{changeResponse.StatusCode}. " +
-            $"Response: {changeContent}");
+            changeResponse.StatusCode);
     }
 
     [Fact]
@@ -470,6 +377,30 @@ public sealed class UsersEndpointsTests(
             response.StatusCode);
     }
 
+    private async Task<Guid> GetRoleIdAsync(
+        string roleName)
+    {
+        using HttpResponseMessage response =
+            await Fixture.WebApiClient.GetAsync(
+                "/api/roles");
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            response.StatusCode);
+
+        RoleResponse[]? roles =
+            await response.Content
+                .ReadFromJsonAsync<RoleResponse[]>();
+
+        Assert.NotNull(roles);
+
+        RoleResponse role =
+            roles.Single(role =>
+                role.Name == roleName);
+
+        return role.Id;
+    }
+
     private async Task<Guid> CreateUserAsync(
         Guid roleId,
         string login,
@@ -488,21 +419,16 @@ public sealed class UsersEndpointsTests(
                     RoleId = roleId
                 });
 
-        string content =
-            await response.Content.ReadAsStringAsync();
+        Assert.Equal(
+            HttpStatusCode.Created,
+            response.StatusCode);
 
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Created,
-            $"Expected 201 Created, but received " +
-            $"{(int)response.StatusCode} " +
-            $"{response.StatusCode}. " +
-            $"Response: {content}");
+        UserResponse? user =
+            await response.Content
+                .ReadFromJsonAsync<UserResponse>();
 
-        using JsonDocument document =
-            JsonDocument.Parse(content);
+        Assert.NotNull(user);
 
-        return document.RootElement
-            .GetProperty("id")
-            .GetGuid();
+        return user.Id;
     }
 }
