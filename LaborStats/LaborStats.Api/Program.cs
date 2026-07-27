@@ -7,6 +7,8 @@ using LaborStats.Infrastructure;
 using LaborStats.Infrastructure.Data.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using LaborStats.Application.Abstractions;
+using LaborStats.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
