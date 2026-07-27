@@ -16,22 +16,37 @@ public sealed class TestAuthHandler(
         encoder)
 {
     public const string AuthenticationScheme = "TestScheme";
-
-    public const string DefaultUserId =
-        "f81ea23c-4962-4044-80c3-cc3bb4586228";
+    public const string UserIdHeader = "Test-User-Id";
+    public const string UserNameHeader = "Test-User-Name";
+    public const string RoleHeader = "Test-Role";
+    public const string UnauthenticatedHeader = "Test-Unauthenticated";
+    public const string DefaultUserId = "f81ea23c-4962-4044-80c3-cc3bb4586228";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        string? unauthenticated =
+            Request.Headers[UnauthenticatedHeader]
+                .FirstOrDefault();
+
+        if (string.Equals(
+                unauthenticated,
+                "true",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(
+                AuthenticateResult.NoResult());
+        }
+
         string userId =
-            Request.Headers["Test-User-Id"].FirstOrDefault()
+            Request.Headers[UserIdHeader].FirstOrDefault()
             ?? DefaultUserId;
 
         string userName =
-            Request.Headers["Test-User-Name"].FirstOrDefault()
+            Request.Headers[UserNameHeader].FirstOrDefault()
             ?? "integration-test-admin";
 
         string role =
-            Request.Headers["Test-Role"].FirstOrDefault()
+            Request.Headers[RoleHeader].FirstOrDefault()
             ?? "Admin";
 
         Claim[] claims =
