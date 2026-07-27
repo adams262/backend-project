@@ -17,10 +17,18 @@ public sealed partial class ImportValidator : IImportValidator
     private const string Employed = "pracujący";
     private const string NewlyHired = "nowozatrudnieni";
 
+    private const string UpperTwoYearsColumn = "LICZBA UBEZPIECZONYCH UMOW POWYZEJ 2 LAT";
+
+    private static int _encodingProviderRegistered;
+
     public ImportValidator(LaborStatsDbContext context)
     {
         _context = context;
-        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+        if (Interlocked.Exchange(ref _encodingProviderRegistered, 1) == 0)
+        {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        }
     }
 
     public async Task<ImportValidationResult> ValidateAsync(
@@ -78,156 +86,199 @@ public sealed partial class ImportValidator : IImportValidator
                "LICZBA UBEZPIECZONYCH (UMOW) - NOWO ZAREJESTROWANYCH"];
 
         using var stream = request.File.OpenReadStream();
-        using var reader = ExcelReaderFactory.CreateReader(stream);
+        IExcelDataReader reader;
 
-        var columnIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        bool headerFound = false;
-        int rowNumber = 0;
-
-        while (rowNumber < 5 && reader.Read())
+        try
         {
-            rowNumber++;
+            reader = ExcelReaderFactory.CreateReader(stream);
+        }
+        catch (Exception)
+        {
+            errors.Add(new ImportValidationError(null, "File", request.File.FileName,
+                "The file could not be read. Please ensure it is a valid, uncorrupted Excel file."));
+            return new ImportValidationResult(false, errors);
+        }
 
-            for (int i = 0; i < reader.FieldCount; i++)
+        using (reader)
+        {
+            var columnIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            bool headerFound = false;
+            int rowNumber = 0;
+
+            while (rowNumber < 5 && reader.Read())
             {
-                string val = NormalizeHeader(reader.GetValue(i)?.ToString() ?? string.Empty);
-                if (val.Contains("WOJEW", StringComparison.OrdinalIgnoreCase))
+                rowNumber++;
+
+                for (int i = 0; i < reader.FieldCount; i++)
                 {
-                    for (int j = 0; j < reader.FieldCount; j++)
+                    string val = NormalizeHeader(reader.GetValue(i)?.ToString() ?? string.Empty);
+                    if (val.Contains("WOJEW", StringComparison.OrdinalIgnoreCase))
                     {
-                        string header = NormalizeHeader(reader.GetValue(j)?.ToString() ?? string.Empty);
-                        if (!string.IsNullOrEmpty(header))
+                        for (int j = 0; j < reader.FieldCount; j++)
                         {
-                            columnIndex[header] = j;
+                            string header = NormalizeHeader(reader.GetValue(j)?.ToString() ?? string.Empty);
+                            if (!string.IsNullOrEmpty(header))
+                            {
+                                columnIndex[header] = j;
+                            }
                         }
+                        headerFound = true;
+                        break;
                     }
-                    headerFound = true;
-                    break;
                 }
+
+                if (headerFound) break;
             }
 
-            if (headerFound) break;
-        }
-
-        if (!headerFound)
-        {
-            errors.Add(new ImportValidationError(null, null, null, "The file does not contain a valid header row with the 'WOJEWÓDZTWO' column."));
-            return new ImportValidationResult(false, errors);
-        }
-
-        foreach (var required in requiredColumns)
-        {
-            bool found = columnIndex.Keys.Any(k => k.StartsWith(required, StringComparison.OrdinalIgnoreCase));
-            if (!found)
+            if (!headerFound)
             {
-                errors.Add(new ImportValidationError(null, required, null, $"Required column '{required}' was not found in the file."));
-            }
-        }
-
-        if (errors.Count > 0)
-        {
-            return new ImportValidationResult(false, errors);
-        }
-
-        var knownCounties = new HashSet<string>(
-            await _context.Counties.AsNoTracking()
-                .Where(c => c.Voivodeship.Name.ToLower() == request.Voivodeship.ToLower())
-                .Select(c => c.Name)
-                .ToListAsync(cancellationToken),
-            StringComparer.OrdinalIgnoreCase);
-
-        var knownProfessions = await _context.Profession.AsNoTracking()
-            .Select(p => new { p.KzisCode })
-            .ToListAsync(cancellationToken);
-
-        var knownOccupationCodes = new HashSet<int>(knownProfessions.Select(p => p.KzisCode));
-
-        var seenRecords = new HashSet<(string County, int Code, string Title)>();
-
-        string numericColumn = isEmployed
-            ? "LICZBA UBEZPIECZONYCH WSZYSTKICH UMOW"
-            : "LICZBA UBEZPIECZONYCH (UMOW) - NOWO ZAREJESTROWANYCH";
-
-        int voivodeshipIdx = FindColumn(columnIndex, "WOJEWODZTWO");
-        int countyIdx = FindColumn(columnIndex, "POWIAT");
-        int occupationIdx = FindColumn(columnIndex, "KOD ZAWODU UBEZPIECZONEGO");
-        int insuranceTitleIdx = FindColumn(columnIndex, "KOD TYTULU UBEZPIECZENIA");
-        int numericIdx = FindColumn(columnIndex, numericColumn);
-
-        int processedRows = 0;
-
-        while (reader.Read())
-        {
-            rowNumber++;
-
-            string voivodeshipCell = GetString(reader, voivodeshipIdx);
-            string cleanedVoivodeship = voivodeshipCell.Replace(",", "").Trim();
-
-            if (string.IsNullOrWhiteSpace(cleanedVoivodeship) || cleanedVoivodeship == "-")
-            {
-                continue;
+                errors.Add(new ImportValidationError(null, null, null, "The file does not contain a valid header row with the 'WOJEWÓDZTWO' column."));
+                return new ImportValidationResult(false, errors);
             }
 
-            processedRows++;
-
-            string county = GetString(reader, countyIdx);
-            string occupationStr = GetString(reader, occupationIdx);
-            string insuranceTitle = GetString(reader, insuranceTitleIdx);
-            string numericValue = GetString(reader, numericIdx);
-
-            if (string.IsNullOrWhiteSpace(county))
+            foreach (var required in requiredColumns)
             {
-                errors.Add(new ImportValidationError(rowNumber, "POWIAT", null, "The county field is required."));
-            }
-            else if (!knownCounties.Contains(county))
-            {
-                errors.Add(new ImportValidationError(rowNumber, "POWIAT", county,
-                    $"County '{county}' does not belong to the specified voivodeship '{request.Voivodeship}' or does not exist."));
-            }
-
-            int occupationCode = 0;
-            if (string.IsNullOrWhiteSpace(occupationStr))
-            {
-                errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", null, "Occupation code is required."));
-            }
-            else if (!int.TryParse(occupationStr, out occupationCode))
-            {
-                errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", occupationStr,
-                    "Occupation code is not in a valid numeric format."));
-            }
-            else if (!knownOccupationCodes.Contains(occupationCode))
-            {
-                errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", occupationStr,
-                    $"Occupation code '{occupationCode}' does not exist in the KZiS dictionary."));
-            }
-
-            if (string.IsNullOrWhiteSpace(numericValue))
-            {
-                errors.Add(new ImportValidationError(rowNumber, numericColumn, null, "Numeric value is required."));
-            }
-            else if (!int.TryParse(numericValue, out int parsedNum) || parsedNum < 0)
-            {
-                errors.Add(new ImportValidationError(rowNumber, numericColumn, numericValue,
-                    "Numeric value has an invalid format or is negative."));
-            }
-
-            if (!string.IsNullOrWhiteSpace(county) && occupationCode != 0)
-            {
-                var recordKey = (county.ToLower(), occupationCode, insuranceTitle.ToLower());
-                if (!seenRecords.Add(recordKey))
+                bool found = columnIndex.Keys.Any(k => k.StartsWith(required, StringComparison.OrdinalIgnoreCase));
+                if (!found)
                 {
-                    errors.Add(new ImportValidationError(rowNumber, null, null,
-                        "A duplicate record was detected in the file for the same county, occupation code, and insurance title."));
+                    errors.Add(new ImportValidationError(null, required, null, $"Required column '{required}' was not found in the file."));
                 }
             }
-        }
 
-        if (processedRows == 0)
-        {
-            errors.Add(new ImportValidationError(null, null, null, "The uploaded file does not contain any data rows to import."));
-        }
+            if (errors.Count > 0)
+            {
+                return new ImportValidationResult(false, errors);
+            }
 
-        return new ImportValidationResult(errors.Count == 0, errors);
+            var knownCounties = new HashSet<string>(
+                await _context.Counties.AsNoTracking()
+                    .Where(c => c.Voivodeship.Name.ToLower() == request.Voivodeship.Trim().ToLower())
+                    .Select(c => c.Name)
+                    .ToListAsync(cancellationToken),
+                StringComparer.OrdinalIgnoreCase);
+
+            var knownProfessions = await _context.Profession.AsNoTracking()
+                .Select(p => new { p.KzisCode })
+                .ToListAsync(cancellationToken);
+
+            var knownOccupationCodes = new HashSet<int>(knownProfessions.Select(p => p.KzisCode));
+
+            var seenRecords = new HashSet<(string County, int Code, string Title)>();
+
+            string numericColumn = isEmployed
+                ? "LICZBA UBEZPIECZONYCH WSZYSTKICH UMOW"
+                : "LICZBA UBEZPIECZONYCH (UMOW) - NOWO ZAREJESTROWANYCH";
+
+            int voivodeshipIdx = FindColumn(columnIndex, "WOJEWODZTWO");
+            int countyIdx = FindColumn(columnIndex, "POWIAT");
+            int occupationIdx = FindColumn(columnIndex, "KOD ZAWODU UBEZPIECZONEGO");
+            int insuranceTitleIdx = FindColumn(columnIndex, "KOD TYTULU UBEZPIECZENIA");
+            int numericIdx = FindColumn(columnIndex, numericColumn);
+            int upperTwoYearsIdx = isEmployed ? FindColumn(columnIndex, UpperTwoYearsColumn) : -1;
+
+            string normalizedExpectedVoivodeship = RemoveDiacritics(request.Voivodeship.Trim());
+
+            int processedRows = 0;
+
+            while (reader.Read())
+            {
+                rowNumber++;
+
+                string voivodeshipCell = GetString(reader, voivodeshipIdx);
+                string cleanedVoivodeship = voivodeshipCell.Replace(",", "").Trim();
+
+                if (string.IsNullOrWhiteSpace(cleanedVoivodeship) || cleanedVoivodeship == "-")
+                {
+                    continue;
+                }
+
+                processedRows++;
+
+                string county = GetString(reader, countyIdx);
+                string occupationStr = GetString(reader, occupationIdx);
+                string insuranceTitle = GetString(reader, insuranceTitleIdx);
+                string numericValue = GetString(reader, numericIdx);
+
+                if (!string.Equals(RemoveDiacritics(cleanedVoivodeship), normalizedExpectedVoivodeship, StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, "WOJEWODZTWO", cleanedVoivodeship,
+                        $"The voivodeship value in the file ('{cleanedVoivodeship}') does not match the specified voivodeship '{request.Voivodeship}'."));
+                }
+
+                if (string.IsNullOrWhiteSpace(county))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, "POWIAT", null, "The county field is required."));
+                }
+                else if (!knownCounties.Contains(county))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, "POWIAT", county,
+                        $"County '{county}' does not belong to the specified voivodeship '{request.Voivodeship}' or does not exist."));
+                }
+
+                int occupationCode = 0;
+                if (string.IsNullOrWhiteSpace(occupationStr))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", null, "Occupation code is required."));
+                }
+                else if (!int.TryParse(occupationStr, out occupationCode))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", occupationStr,
+                        "Occupation code is not in a valid numeric format."));
+                }
+                else if (!knownOccupationCodes.Contains(occupationCode))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", occupationStr,
+                        $"Occupation code '{occupationCode}' does not exist in the KZiS dictionary."));
+                }
+
+                if (string.IsNullOrWhiteSpace(insuranceTitle))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, "KOD TYTULU UBEZPIECZENIA", null, "Insurance title code is required."));
+                }
+
+                if (string.IsNullOrWhiteSpace(numericValue))
+                {
+                    errors.Add(new ImportValidationError(rowNumber, numericColumn, null, "Numeric value is required."));
+                }
+                else if (!int.TryParse(numericValue, out int parsedNum) || parsedNum < 0)
+                {
+                    errors.Add(new ImportValidationError(rowNumber, numericColumn, numericValue,
+                        "Numeric value has an invalid format or is negative."));
+                }
+
+                if (isEmployed)
+                {
+                    string upperTwoYearsValue = GetString(reader, upperTwoYearsIdx);
+
+                    if (string.IsNullOrWhiteSpace(upperTwoYearsValue))
+                    {
+                        errors.Add(new ImportValidationError(rowNumber, UpperTwoYearsColumn, null, "Numeric value is required."));
+                    }
+                    else if (!int.TryParse(upperTwoYearsValue, out int parsedUpperTwoYears) || parsedUpperTwoYears < 0)
+                    {
+                        errors.Add(new ImportValidationError(rowNumber, UpperTwoYearsColumn, upperTwoYearsValue,
+                            "Numeric value has an invalid format or is negative."));
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(county) && occupationCode != 0)
+                {
+                    var recordKey = (county.ToLower(), occupationCode, insuranceTitle.ToLower());
+                    if (!seenRecords.Add(recordKey))
+                    {
+                        errors.Add(new ImportValidationError(rowNumber, null, null,
+                            "A duplicate record was detected in the file for the same county, occupation code, and insurance title."));
+                    }
+                }
+            }
+
+            if (processedRows == 0)
+            {
+                errors.Add(new ImportValidationError(null, null, null, "The uploaded file does not contain any data rows to import."));
+            }
+
+            return new ImportValidationResult(errors.Count == 0, errors);
+        }
     }
 
     private static string NormalizeHeader(string rawHeader)
