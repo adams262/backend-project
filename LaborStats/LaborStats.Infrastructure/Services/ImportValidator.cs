@@ -4,16 +4,23 @@ using LaborStats.Application.Imports;
 using LaborStats.Application.Imports.Dtos;
 using LaborStats.Domain.Entities;
 using LaborStats.Infrastructure.Data;
+using LaborStats.Infrastructure.Helpers; 
 using Microsoft.EntityFrameworkCore;
 
 namespace LaborStats.Infrastructure.Services;
 
 public sealed class ImportValidator : IImportValidator
 {
-    private readonly LaborStatsDbContext _context;
+    private const string VoivodeshipCol = "WOJEWODZTWO";
+    private const string CountyCol = "POWIAT";
+    private const string OccupationCodeCol = "KOD ZAWODU UBEZPIECZONEGO";
+    private const string InsuranceTitleCol = "KOD TYTULU UBEZPIECZENIA";
+    private const string EmployedTotalCol = "LICZBA UBEZPIECZONYCH WSZYSTKICH UMOW";
+    private const string EmployedOver2YearsCol = "LICZBA UBEZPIECZONYCH UMOW POWYZEJ 2 LAT";
+    private const string NewlyHiredCol = "LICZBA UBEZPIECZONYCH (UMOW) - NOWO ZAREJESTROWANYCH";
+    private const string HeaderRowIdentifier = "WOJEW";
 
-    private const string Employed = "pracujący";
-    private const string NewlyHired = "nowozatrudnieni";
+    private readonly LaborStatsDbContext _context;
 
     public ImportValidator(LaborStatsDbContext context)
     {
@@ -27,10 +34,42 @@ public sealed class ImportValidator : IImportValidator
     {
         var errors = new List<ImportValidationError>();
 
+        await ValidateRequestAsync(request, errors, cancellationToken);
+        if (errors.Count > 0)
+        {
+            return new ImportValidationResult(false, errors);
+        }
+
+        bool isEmployed = request.DataType == ImportDataType.Employed;
+        string[] requiredColumns = isEmployed
+            ? [VoivodeshipCol, CountyCol, OccupationCodeCol, InsuranceTitleCol, EmployedTotalCol, EmployedOver2YearsCol]
+            : [VoivodeshipCol, CountyCol, OccupationCodeCol, InsuranceTitleCol, NewlyHiredCol];
+
+        using var stream = request.File.OpenReadStream();
+        using var reader = ExcelReaderFactory.CreateReader(stream);
+
+        var columnIndex = ResolveColumns(reader, requiredColumns, errors);
+        if (errors.Count > 0)
+        {
+            return new ImportValidationResult(false, errors);
+        }
+
+        var (knownCounties, knownOccupationCodes) = await LoadDictionariesAsync(request, cancellationToken);
+
+        ValidateRows(reader, columnIndex, isEmployed, request, knownCounties, knownOccupationCodes, errors);
+
+        return new ImportValidationResult(errors.Count == 0, errors);
+    }
+
+    private async Task ValidateRequestAsync(
+        ImportRequestDto request,
+        List<ImportValidationError> errors,
+        CancellationToken cancellationToken)
+    {
         if (request.File == null || request.File.Length == 0)
         {
             errors.Add(new ImportValidationError(null, "File", null, "The import file is required and cannot be empty."));
-            return new ImportValidationResult(false, errors);
+            return;
         }
 
         bool voivodeshipExists = await _context.Voivodeships
@@ -55,29 +94,18 @@ public sealed class ImportValidator : IImportValidator
                 "The period is invalid. Expected FirstHalf (1) or SecondHalf (2)."));
         }
 
-        bool isEmployed = string.Equals(request.DataType, Employed, StringComparison.OrdinalIgnoreCase);
-        bool isNewlyHired = string.Equals(request.DataType, NewlyHired, StringComparison.OrdinalIgnoreCase);
-
-        if (!isEmployed && !isNewlyHired)
+        if (!Enum.IsDefined(typeof(ImportDataType), request.DataType))
         {
-            errors.Add(new ImportValidationError(null, "DataType", request.DataType,
-                $"Data type '{request.DataType}' is not recognized. Expected 'pracujący' or 'nowozatrudnieni'."));
+            errors.Add(new ImportValidationError(null, "DataType", request.DataType.ToString(),
+                "The data type is invalid. Expected Employed (1) or NewlyHired (2)."));
         }
+    }
 
-        if (errors.Count > 0)
-        {
-            return new ImportValidationResult(false, errors);
-        }
-
-        string[] requiredColumns = isEmployed
-            ? ["WOJEWODZTWO", "POWIAT", "KOD ZAWODU UBEZPIECZONEGO", "KOD TYTULU UBEZPIECZENIA",
-               "LICZBA UBEZPIECZONYCH WSZYSTKICH UMOW", "LICZBA UBEZPIECZONYCH UMOW POWYZEJ 2 LAT"]
-            : ["WOJEWODZTWO", "POWIAT", "KOD ZAWODU UBEZPIECZONEGO", "KOD TYTULU UBEZPIECZENIA",
-               "LICZBA UBEZPIECZONYCH (UMOW) - NOWO ZAREJESTROWANYCH"];
-
-        using var stream = request.File.OpenReadStream();
-        using var reader = ExcelReaderFactory.CreateReader(stream);
-
+    private static Dictionary<string, int> ResolveColumns(
+        IExcelDataReader reader,
+        string[] requiredColumns,
+        List<ImportValidationError> errors)
+    {
         var columnIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         bool headerFound = false;
         int rowNumber = 0;
@@ -88,12 +116,14 @@ public sealed class ImportValidator : IImportValidator
 
             for (int i = 0; i < reader.FieldCount; i++)
             {
-                string val = NormalizeHeader(reader.GetValue(i)?.ToString() ?? string.Empty);
-                if (val.Contains("WOJEW", StringComparison.OrdinalIgnoreCase))
+                string val = ExcelHelper.NormalizeHeader(reader.GetValue(i)?.ToString() ?? string.Empty);
+
+                if (val.Contains(HeaderRowIdentifier, StringComparison.OrdinalIgnoreCase))
                 {
                     for (int j = 0; j < reader.FieldCount; j++)
                     {
-                        string header = NormalizeHeader(reader.GetValue(j)?.ToString() ?? string.Empty);
+                        string header = ExcelHelper.NormalizeHeader(reader.GetValue(j)?.ToString() ?? string.Empty);
+
                         if (!string.IsNullOrEmpty(header))
                         {
                             columnIndex[header] = j;
@@ -109,8 +139,8 @@ public sealed class ImportValidator : IImportValidator
 
         if (!headerFound)
         {
-            errors.Add(new ImportValidationError(null, null, null, "The file does not contain a valid header row with the 'WOJEWÓDZTWO' column."));
-            return new ImportValidationResult(false, errors);
+            errors.Add(new ImportValidationError(null, null, null, $"The file does not contain a valid header row with the '{VoivodeshipCol}' column."));
+            return columnIndex;
         }
 
         foreach (var required in requiredColumns)
@@ -122,11 +152,13 @@ public sealed class ImportValidator : IImportValidator
             }
         }
 
-        if (errors.Count > 0)
-        {
-            return new ImportValidationResult(false, errors);
-        }
+        return columnIndex;
+    }
 
+    private async Task<(HashSet<string> Counties, HashSet<int> OccupationCodes)> LoadDictionariesAsync(
+        ImportRequestDto request,
+        CancellationToken cancellationToken)
+    {
         var knownCounties = new HashSet<string>(
             await _context.Counties.AsNoTracking()
                 .Where(c => c.Voivodeship.Name.ToLower() == request.Voivodeship.Trim().ToLower())
@@ -139,25 +171,36 @@ public sealed class ImportValidator : IImportValidator
                 .Select(p => p.KzisCode)
                 .ToListAsync(cancellationToken));
 
+        return (knownCounties, knownOccupationCodes);
+    }
+
+    private static void ValidateRows(
+        IExcelDataReader reader,
+        Dictionary<string, int> columnIndex,
+        bool isEmployed,
+        ImportRequestDto request,
+        HashSet<string> knownCounties,
+        HashSet<int> knownOccupationCodes,
+        List<ImportValidationError> errors)
+    {
         var seenRecords = new HashSet<(string County, int Code, string Title)>();
 
-        string numericColumn = isEmployed
-            ? "LICZBA UBEZPIECZONYCH WSZYSTKICH UMOW"
-            : "LICZBA UBEZPIECZONYCH (UMOW) - NOWO ZAREJESTROWANYCH";
+        string numericColumn = isEmployed ? EmployedTotalCol : NewlyHiredCol;
 
-        int voivodeshipIdx = FindColumn(columnIndex, "WOJEWODZTWO");
-        int countyIdx = FindColumn(columnIndex, "POWIAT");
-        int occupationIdx = FindColumn(columnIndex, "KOD ZAWODU UBEZPIECZONEGO");
-        int insuranceTitleIdx = FindColumn(columnIndex, "KOD TYTULU UBEZPIECZENIA");
-        int numericIdx = FindColumn(columnIndex, numericColumn);
+        int voivodeshipIdx = ExcelHelper.FindColumn(columnIndex, VoivodeshipCol);
+        int countyIdx = ExcelHelper.FindColumn(columnIndex, CountyCol);
+        int occupationIdx = ExcelHelper.FindColumn(columnIndex, OccupationCodeCol);
+        int insuranceTitleIdx = ExcelHelper.FindColumn(columnIndex, InsuranceTitleCol);
+        int numericIdx = ExcelHelper.FindColumn(columnIndex, numericColumn);
 
         int processedRows = 0;
+        int rowNumber = 0;
 
         while (reader.Read())
         {
             rowNumber++;
 
-            string voivodeshipCell = GetString(reader, voivodeshipIdx);
+            string voivodeshipCell = ExcelHelper.GetString(reader, voivodeshipIdx);
             string cleanedVoivodeship = voivodeshipCell.Replace(",", "").Trim();
 
             if (string.IsNullOrWhiteSpace(cleanedVoivodeship) || cleanedVoivodeship == "-")
@@ -167,34 +210,34 @@ public sealed class ImportValidator : IImportValidator
 
             processedRows++;
 
-            string county = GetString(reader, countyIdx);
-            string occupationStr = GetString(reader, occupationIdx);
-            string insuranceTitle = GetString(reader, insuranceTitleIdx);
-            string numericValue = GetString(reader, numericIdx);
+            string county = ExcelHelper.GetString(reader, countyIdx);
+            string occupationStr = ExcelHelper.GetString(reader, occupationIdx);
+            string insuranceTitle = ExcelHelper.GetString(reader, insuranceTitleIdx);
+            string numericValue = ExcelHelper.GetString(reader, numericIdx);
 
             if (string.IsNullOrWhiteSpace(county))
             {
-                errors.Add(new ImportValidationError(rowNumber, "POWIAT", null, "The county field is required."));
+                errors.Add(new ImportValidationError(rowNumber, CountyCol, null, "The county field is required."));
             }
             else if (!knownCounties.Contains(county))
             {
-                errors.Add(new ImportValidationError(rowNumber, "POWIAT", county,
+                errors.Add(new ImportValidationError(rowNumber, CountyCol, county,
                     $"County '{county}' does not belong to the specified voivodeship '{request.Voivodeship}' or does not exist."));
             }
 
             int occupationCode = 0;
             if (string.IsNullOrWhiteSpace(occupationStr))
             {
-                errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", null, "Occupation code is required."));
+                errors.Add(new ImportValidationError(rowNumber, OccupationCodeCol, null, "Occupation code is required."));
             }
             else if (!int.TryParse(occupationStr, out occupationCode))
             {
-                errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", occupationStr,
+                errors.Add(new ImportValidationError(rowNumber, OccupationCodeCol, occupationStr,
                     "Occupation code is not in a valid numeric format."));
             }
             else if (!knownOccupationCodes.Contains(occupationCode))
             {
-                errors.Add(new ImportValidationError(rowNumber, "KOD ZAWODU UBEZPIECZONEGO", occupationStr,
+                errors.Add(new ImportValidationError(rowNumber, OccupationCodeCol, occupationStr,
                     $"Occupation code '{occupationCode}' does not exist in the KZiS dictionary."));
             }
 
@@ -223,42 +266,5 @@ public sealed class ImportValidator : IImportValidator
         {
             errors.Add(new ImportValidationError(null, null, null, "The uploaded file does not contain any data rows to import."));
         }
-
-        return new ImportValidationResult(errors.Count == 0, errors);
-    }
-
-    private static string NormalizeHeader(string rawHeader)
-    {
-        string header = rawHeader.Replace("\n", " ").Replace("\r", " ").Trim();
-        header = System.Text.RegularExpressions.Regex.Replace(header, @"\s+", " ");
-        return RemoveDiacritics(header);
-    }
-
-    private static string RemoveDiacritics(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return text;
-        var src = "ąęćłńóśźżĄĘĆŁŃÓŚŹŻ";
-        var dst = "aeclnoszzAECLNOSZZ";
-        for (int i = 0; i < src.Length; i++)
-        {
-            text = text.Replace(src[i], dst[i]);
-        }
-        return text;
-    }
-
-    private static int FindColumn(Dictionary<string, int> columnIndex, string prefix)
-    {
-        string normalizedPrefix = RemoveDiacritics(prefix);
-        var match = columnIndex.FirstOrDefault(kv =>
-            kv.Key.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase));
-        return match.Key is not null ? match.Value : -1;
-    }
-
-    private static string GetString(IExcelDataReader reader, int index)
-    {
-        if (index < 0 || reader.IsDBNull(index))
-            return string.Empty;
-
-        return reader.GetValue(index)?.ToString()?.Trim() ?? string.Empty;
     }
 }
