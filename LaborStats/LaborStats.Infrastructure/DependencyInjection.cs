@@ -39,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
 
+        services.AddScoped<IImportQueryService,ImportQueryService>();
+
         return services.AddScoped<AdminSeeder>();
     }
 
