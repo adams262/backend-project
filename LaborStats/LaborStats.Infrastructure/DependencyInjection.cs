@@ -43,6 +43,8 @@ public static class DependencyInjection
         services.AddScoped<IImportQueryService,ImportQueryService>();
         services.AddScoped<IImportValidator, ImportValidator>();
 
+        services.AddScoped<IImportIdempotencyChecker, ImportIdempotencyChecker>();
+
         return services.AddScoped<AdminSeeder>();
     }
 
