@@ -33,6 +33,8 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
 
+        services.AddAutoMapper(cfg => cfg.AddMaps(typeof(DependencyInjection).Assembly));
+
         services.AddScoped<IPasswordHasher<Users>, PasswordHasher<Users>>();
 
         services.AddScoped<IRoleService, RoleService>();

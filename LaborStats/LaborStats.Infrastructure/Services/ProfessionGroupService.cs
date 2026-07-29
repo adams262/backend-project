@@ -1,3 +1,5 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using LaborStats.Application.Abstractions;
 using LaborStats.Application.ProfessionGroups;
 using LaborStats.Domain.Entities;
@@ -10,36 +12,30 @@ namespace LaborStats.Infrastructure.Services;
 public sealed class ProfessionGroupService(
     LaborStatsDbContext context,
     ICurrentUserService currentUserService,
-    TimeProvider timeProvider) : IProfessionGroupService
+    TimeProvider timeProvider,
+    IMapper mapper) : IProfessionGroupService
 {
     public async Task<ProfessionGroupResponse> CreateAsync(
         CreateProfessionGroupRequest request,
         CancellationToken cancellationToken = default)
     {
-        bool exists = await context.ProfessionGroup
-            .AnyAsync(pg => pg.Name == request.Name, cancellationToken);
-
-        if (exists)
+        if (await context.ProfessionGroup.AnyAsync(pg => pg.Name == request.Name, cancellationToken))
         {
             throw new ConflictException($"Profession group '{request.Name}' already exists.");
         }
 
+        var group = mapper.Map<ProfessionGroups>(request);
+
         var (userId, username) = currentUserService.RequireAuditUser();
         var now = timeProvider.GetUtcNow();
-
-        var group = new ProfessionGroups
-        {
-            Name = request.Name,
-            NameEn = request.NameEn,
-            CreatedAt = now,
-            CreatedById = userId,
-            CreatedByName = username
-        };
+        group.CreatedAt = now;
+        group.CreatedById = userId;
+        group.CreatedByName = username;
 
         context.ProfessionGroup.Add(group);
         await context.SaveChangesAsync(cancellationToken);
 
-        return new ProfessionGroupResponse(group.Id, group.Name, group.NameEn);
+        return mapper.Map<ProfessionGroupResponse>(group);
     }
 
     public async Task<ProfessionGroupResponse> UpdateAsync(
@@ -57,21 +53,13 @@ public sealed class ProfessionGroupService(
 
         if (request.Name is not null && request.Name != group.Name)
         {
-            bool duplicate = await context.ProfessionGroup
-                .AnyAsync(pg => pg.Name == request.Name && pg.Id != id, cancellationToken);
-
-            if (duplicate)
+            if (await context.ProfessionGroup.AnyAsync(pg => pg.Name == request.Name && pg.Id != id, cancellationToken))
             {
                 throw new ConflictException($"Profession group '{request.Name}' already exists.");
             }
-
-            group.Name = request.Name;
         }
 
-        if (request.NameEn is not null)
-        {
-            group.NameEn = request.NameEn;
-        }
+        mapper.Map(request, group);
 
         var (userId, username) = currentUserService.RequireAuditUser();
         group.UpdatedAt = timeProvider.GetUtcNow();
@@ -80,7 +68,7 @@ public sealed class ProfessionGroupService(
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return new ProfessionGroupResponse(group.Id, group.Name, group.NameEn);
+        return mapper.Map<ProfessionGroupResponse>(group);
     }
 
     public async Task<ProfessionGroupDetailResponse?> GetByIdAsync(
@@ -89,18 +77,7 @@ public sealed class ProfessionGroupService(
     {
         return await context.ProfessionGroup
             .Where(pg => pg.Id == id)
-            .Select(pg => new ProfessionGroupDetailResponse(
-                pg.Id,
-                pg.Name,
-                pg.NameEn,
-                pg.CreatedAt,
-                pg.UpdatedAt,
-                pg.CreatedByName,
-                pg.UpdatedByName,
-                pg.Professions
-                    .OrderBy(p => p.KzisCode)
-                    .Select(p => new ProfessionGroupProfessionResponse(p.Id, p.KzisCode, p.KzisName))
-                    .ToList()))
+            .ProjectTo<ProfessionGroupDetailResponse>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -109,7 +86,7 @@ public sealed class ProfessionGroupService(
     {
         return await context.ProfessionGroup
             .OrderBy(pg => pg.Name)
-            .Select(pg => new ProfessionGroupResponse(pg.Id, pg.Name, pg.NameEn))
+            .ProjectTo<ProfessionGroupResponse>(mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
     }
 }
