@@ -16,4 +16,8 @@
     <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\LaborStats.Domain\LaborStats.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
