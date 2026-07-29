@@ -33,11 +33,15 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
 
+        services.AddAutoMapper(cfg => cfg.AddMaps(typeof(DependencyInjection).Assembly));
+
         services.AddScoped<IPasswordHasher<Users>, PasswordHasher<Users>>();
 
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProfessionGroupService, ProfessionGroupService>();
+        services.AddScoped<IProfessionService, ProfessionService>();
         services.AddScoped<IDataConversionService, DataConversionService>();
 
         services.AddScoped<IImportQueryService,ImportQueryService>();

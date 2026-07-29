@@ -123,6 +123,7 @@ namespace LaborStats.Api.Middleware
             NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
             ConflictException => ((int)HttpStatusCode.Conflict, "Conflict"),
             ImportValidationException => ((int)HttpStatusCode.BadRequest, "Import validation failed"),
+            UnauthorizedException => ((int)HttpStatusCode.Unauthorized, "Unauthorized"),
             ValidationException => ((int)HttpStatusCode.BadRequest, "Validation error"),
             _ => ((int)HttpStatusCode.InternalServerError, "An unexpected server error occured")
         };
