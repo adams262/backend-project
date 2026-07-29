@@ -38,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProfessionGroupService, ProfessionGroupService>();
+        services.AddScoped<IProfessionService, ProfessionService>();
 
         return services.AddScoped<AdminSeeder>();
     }
