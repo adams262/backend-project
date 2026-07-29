@@ -18,7 +18,7 @@ public sealed class ImportResultsController(
     IImportQueryService importQueryService)
     : ControllerBase
 {
-    /// /// <summary>
+    /// <summary>
     /// Returns the list of completed data imports. Requires administrator privileges.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token for the request.</param>
@@ -38,11 +38,9 @@ public sealed class ImportResultsController(
         ActionResult<IReadOnlyList<ImportListItemResponse>>>
         GetAll(CancellationToken cancellationToken)
     {
-        IReadOnlyList<ImportListItemResponse> imports =
+        return Ok(
             await importQueryService.GetAllAsync(
-                cancellationToken);
-
-        return Ok(imports);
+                cancellationToken));
     }
 
     /// <summary>
@@ -88,34 +86,25 @@ public sealed class ImportResultsController(
     /// <param name="cancellationToken">Cancellation token for the request.</param>
     /// <response code="200">
     /// The processed records were successfully retrieved. Returns an empty collection
-    /// when the import exists but contains no processed records.
+    /// when no imports exist for the specified import identifier.
     /// </response>
     /// <response code="401">Not authenticated.</response>
     /// <response code="403">Administrator privileges required.</response>
-    /// <response code="404">An import with the specified identifier was not found.</response>
     [HttpGet("{id:guid}/records")]
     [ProducesResponseType(
         typeof(IReadOnlyList<LaborStatRecordResponse>),
         StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<
         ActionResult<IReadOnlyList<LaborStatRecordResponse>>>
         GetRecords(
             Guid id,
             CancellationToken cancellationToken)
     {
-        IReadOnlyList<LaborStatRecordResponse>? records =
+        return Ok(
             await importQueryService.GetRecordsAsync(
                 id,
-                cancellationToken);
-
-        if (records is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(records);
+                cancellationToken));
     }
 }
