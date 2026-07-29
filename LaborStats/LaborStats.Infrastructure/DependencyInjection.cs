@@ -42,6 +42,10 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IProfessionGroupService, ProfessionGroupService>();
         services.AddScoped<IProfessionService, ProfessionService>();
+        services.AddScoped<IDataConversionService, DataConversionService>();
+
+        services.AddScoped<IImportQueryService,ImportQueryService>();
+        services.AddScoped<IImportValidator, ImportValidator>();
 
         return services.AddScoped<AdminSeeder>();
     }

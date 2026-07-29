@@ -7,9 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Imports\ImportResponseDto.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LaborStats.Domain\LaborStats.Domain.csproj" />
   </ItemGroup>
 
 </Project>

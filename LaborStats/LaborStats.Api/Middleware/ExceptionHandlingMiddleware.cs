@@ -1,6 +1,7 @@
 ﻿
 using System.Net;
 using FluentValidation;
+using LaborStats.Application.Imports;
 using LaborStats.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -57,7 +58,25 @@ namespace LaborStats.Api.Middleware
 
             context.Response.ContentType = "application/problem+json";
             context.Response.StatusCode = statusCode;
-         
+
+            if (exception is ImportValidationException importValidationException)
+            {
+                var problemDetailsWithErrors = new ProblemDetails
+                {
+                    Status = statusCode,
+                    Title = title,
+                    Detail = exception.Message,
+                    Instance = context.Request.Path,
+                    Type = $"https://httpstatuses.io/{statusCode}"
+                };
+
+                problemDetailsWithErrors.Extensions["traceId"] = traceId;
+                problemDetailsWithErrors.Extensions["errors"] = importValidationException.Errors;
+
+                await context.Response.WriteAsJsonAsync(problemDetailsWithErrors);
+                return;
+            }
+
             if (exception is ValidationException fluentValidationException)
             {
                 var validationErrors = fluentValidationException.Errors
@@ -103,6 +122,7 @@ namespace LaborStats.Api.Middleware
         {
             NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
             ConflictException => ((int)HttpStatusCode.Conflict, "Conflict"),
+            ImportValidationException => ((int)HttpStatusCode.BadRequest, "Import validation failed"),
             UnauthorizedException => ((int)HttpStatusCode.Unauthorized, "Unauthorized"),
             ValidationException => ((int)HttpStatusCode.BadRequest, "Validation error"),
             _ => ((int)HttpStatusCode.InternalServerError, "An unexpected server error occured")

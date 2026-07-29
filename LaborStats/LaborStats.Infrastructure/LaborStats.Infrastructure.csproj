@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UserSecretsId>ce24b372-6816-4f53-a727-01a25b2d22ab</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,13 +24,18 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" />
+    <PackageReference Include="ClosedXML" />
     <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="ExcelDataReader" />
+    <PackageReference Include="ExcelDataReader.DataSet" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" />
     <PackageReference Include="FluentEmail.Smtp" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
