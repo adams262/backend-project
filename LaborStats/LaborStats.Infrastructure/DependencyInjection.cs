@@ -40,6 +40,9 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IDataConversionService, DataConversionService>();
 
+        services.AddScoped<IImportQueryService,ImportQueryService>();
+        services.AddScoped<IImportValidator, ImportValidator>();
+
         return services.AddScoped<AdminSeeder>();
     }
 
