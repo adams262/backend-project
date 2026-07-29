@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IDataConversionService, DataConversionService>();
 
         services.AddScoped<IImportQueryService,ImportQueryService>();
         services.AddScoped<IImportValidator, ImportValidator>();

@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" />
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="ExcelDataReader" />
     <PackageReference Include="ExcelDataReader.DataSet" />
