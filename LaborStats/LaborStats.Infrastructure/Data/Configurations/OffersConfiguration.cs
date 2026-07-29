@@ -25,18 +25,18 @@ public sealed class OffersConfiguration : IEntityTypeConfiguration<Offers>
         builder.Property(o => o.ProfessionGroupId)
             .IsRequired();
 
-        builder.Property(o => o.SnapshotCompanyName)
+        builder.Property(o => o.CompanyName)
             .HasMaxLength(500)
             .IsRequired();
 
-        builder.Property(o => o.SnapshotExpirationDate)
+        builder.Property(o => o.ExpirationDate)
             .HasColumnType("date");
 
-        builder.Property(o => o.SnapshotJobTitle)
+        builder.Property(o => o.JobTitle)
             .HasMaxLength(500)
             .IsRequired();
 
-        builder.Property(o => o.SnapshotPublicationDate)
+        builder.Property(o => o.PublicationDate)
             .HasColumnType("date")
             .IsRequired();
 
@@ -47,7 +47,7 @@ public sealed class OffersConfiguration : IEntityTypeConfiguration<Offers>
 
         builder.HasIndex(o => o.ProfessionGroupId);
         builder.HasIndex(o => new { o.Year, o.Period});
-        builder.HasIndex(o => o.SnapshotPublicationDate);
-        builder.HasIndex(o => o.SnapshotExpirationDate);
+        builder.HasIndex(o => o.PublicationDate);
+        builder.HasIndex(o => o.ExpirationDate);
     }
 }

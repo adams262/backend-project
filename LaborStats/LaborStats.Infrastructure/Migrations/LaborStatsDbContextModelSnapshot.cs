@@ -2841,6 +2841,22 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("uuidv7()");
 
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("company_name");
+
+                    b.Property<DateOnly?>("ExpirationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expiration_date");
+
+                    b.Property<string>("JobTitle")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("job_title");
+
                     b.Property<byte>("Period")
                         .HasColumnType("smallint")
                         .HasColumnName("period");
@@ -2849,25 +2865,9 @@ namespace LaborStats.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("profession_group_id");
 
-                    b.Property<string>("SnapshotCompanyName")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("snapshot_company_name");
-
-                    b.Property<DateOnly?>("SnapshotExpirationDate")
+                    b.Property<DateOnly>("PublicationDate")
                         .HasColumnType("date")
-                        .HasColumnName("snapshot_expiration_date");
-
-                    b.Property<string>("SnapshotJobTitle")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("snapshot_job_title");
-
-                    b.Property<DateOnly>("SnapshotPublicationDate")
-                        .HasColumnType("date")
-                        .HasColumnName("snapshot_publication_date");
+                        .HasColumnName("publication_date");
 
                     b.Property<int>("Year")
                         .HasColumnType("integer")
@@ -2876,14 +2876,14 @@ namespace LaborStats.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_offers");
 
+                    b.HasIndex("ExpirationDate")
+                        .HasDatabaseName("ix_offers_expiration_date");
+
                     b.HasIndex("ProfessionGroupId")
                         .HasDatabaseName("ix_offers_profession_group_id");
 
-                    b.HasIndex("SnapshotExpirationDate")
-                        .HasDatabaseName("ix_offers_snapshot_expiration_date");
-
-                    b.HasIndex("SnapshotPublicationDate")
-                        .HasDatabaseName("ix_offers_snapshot_publication_date");
+                    b.HasIndex("PublicationDate")
+                        .HasDatabaseName("ix_offers_publication_date");
 
                     b.HasIndex("Year", "Period")
                         .HasDatabaseName("ix_offers_year_period");

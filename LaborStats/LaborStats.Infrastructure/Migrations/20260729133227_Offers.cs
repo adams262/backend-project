@@ -23,10 +23,10 @@ namespace LaborStats.Infrastructure.Migrations
                     year = table.Column<int>(type: "integer", nullable: false),
                     period = table.Column<byte>(type: "smallint", nullable: false),
                     profession_group_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    snapshot_company_name = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    snapshot_expiration_date = table.Column<DateOnly>(type: "date", nullable: true),
-                    snapshot_job_title = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    snapshot_publication_date = table.Column<DateOnly>(type: "date", nullable: false)
+                    company_name = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    expiration_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    job_title = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    publication_date = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -41,22 +41,22 @@ namespace LaborStats.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "ix_offers_expiration_date",
+                schema: "off",
+                table: "offers",
+                column: "expiration_date");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_offers_profession_group_id",
                 schema: "off",
                 table: "offers",
                 column: "profession_group_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_offers_snapshot_expiration_date",
+                name: "ix_offers_publication_date",
                 schema: "off",
                 table: "offers",
-                column: "snapshot_expiration_date");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_offers_snapshot_publication_date",
-                schema: "off",
-                table: "offers",
-                column: "snapshot_publication_date");
+                column: "publication_date");
 
             migrationBuilder.CreateIndex(
                 name: "ix_offers_year_period",
