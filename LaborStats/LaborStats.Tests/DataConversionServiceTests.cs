@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using LaborStats.Application.Imports.Dtos;
+using LaborStats.Domain.Entities;
 using LaborStats.Infrastructure.Data;
 using LaborStats.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,14 @@ public class DataConversionServiceTests
             .Options;
 
         var dbContext = new LaborStatsDbContext(options);
+
+        var voivodeship = new Voivodeship
+        {
+            Teryt = "30",
+            Name = "WIELKOPOLSKIE"
+        };
+
+        dbContext.Voivodeships.Add(voivodeship);
 
         dbContext.Counties.Add(new LaborStats.Domain.Entities.County 
         { 
@@ -47,13 +56,13 @@ public class DataConversionServiceTests
         {
             var worksheet = workbook.Worksheets.Add("2024-Q1"); 
 
-            worksheet.Cell(1, 1).Value = "POWIAT";
-            worksheet.Cell(1, 2).Value = "KOD ZAWODU";
-            worksheet.Cell(1, 3).Value = "WSZYSTKICH UMÓW";
+            worksheet.Cell(2, 1).Value = "POWIAT";
+            worksheet.Cell(2, 2).Value = "KOD ZAWODU";
+            worksheet.Cell(2, 3).Value = "WSZYSTKICH UMÓW";
 
-            worksheet.Cell(2, 1).Value = "Poznański";
-            worksheet.Cell(2, 2).Value = "251201";
-            worksheet.Cell(2, 3).Value = "1,5 tys.";
+            worksheet.Cell(3, 1).Value = "Poznański";
+            worksheet.Cell(3, 2).Value = "251201";
+            worksheet.Cell(3, 3).Value = "1,5 tys.";
 
             workbook.SaveAs(stream);
         }
