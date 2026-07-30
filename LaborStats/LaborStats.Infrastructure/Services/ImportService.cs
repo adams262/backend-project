@@ -12,6 +12,10 @@ public class ImportService(
     IDataConversionService dataConversionService,
     LaborStatsDbContext dbContext) : IImportService
 {
+
+    private const string InsuredAllContracts = "INSURED_ALL_CONTRACTS";
+    private const string InsuredOver2Years = "INSURED_OVER_2_YEARS";
+    private const string InsuredNewlyRegistered = "INSURED_NEWLY_REGISTERED";
     public async Task ProcessImportAsync(
         ImportRequestDto request,
         string username,
@@ -51,15 +55,15 @@ public class ImportService(
             .GroupBy(r => (r.CountyId, r.ProfessionId))
             .Select(g => new LaborStatRecord
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Voivodeship = request.Voivodeship,
                 County = g.Key.CountyId,
                 OccupationCode = g.Key.ProfessionId.ToString(),
                 InsuranceTitleCode = string.Empty, 
                 DataType = dataTypeValue,
-                TotalContractsCount = g.FirstOrDefault(r => r.DataType == "INSURED_ALL_CONTRACTS")?.Value,
-                LongTermContractsCount = g.FirstOrDefault(r => r.DataType == "INSURED_OVER_2_YEARS")?.Value,
-                NewlyRegisteredCount = g.FirstOrDefault(r => r.DataType == "INSURED_NEWLY_REGISTERED")?.Value
+                TotalContractsCount = g.FirstOrDefault(r => r.DataType == InsuredAllContracts)?.Value,
+                LongTermContractsCount = g.FirstOrDefault(r => r.DataType == InsuredOver2Years)?.Value,
+                NewlyRegisteredCount = g.FirstOrDefault(r => r.DataType == InsuredNewlyRegistered)?.Value
             })
             .ToList();
     }
@@ -71,7 +75,7 @@ public class ImportService(
     {
         return new ImportHistory
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             FileName = request.File.FileName,
             Voivodeship = request.Voivodeship,
             Year = request.Year,

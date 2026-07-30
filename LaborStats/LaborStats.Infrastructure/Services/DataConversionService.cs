@@ -10,6 +10,16 @@ namespace LaborStats.Infrastructure.Services;
 
 public class DataConversionService(LaborStatsDbContext dbContext) : IDataConversionService
 {
+    private const string PowiatColumn = "POWIAT";
+    private const string OccupationCodeColumn = "KOD ZAWODU";
+    private const string AllContractsColumn = "WSZYSTKICH UMÓW";
+    private const string Over2YearsColumn = "POWYŻEJ 2 LAT";
+    private const string NewlyRegisteredColumn = "NOWO ZAREJESTROWANY";
+
+    private const string InsuredAllContracts = "INSURED_ALL_CONTRACTS";
+    private const string InsuredOver2Years = "INSURED_OVER_2_YEARS";
+    private const string InsuredNewlyRegistered = "INSURED_NEWLY_REGISTERED";
+
     public async Task<List<ConvertedImportRowDto>> ConvertAsync(Stream fileStream,
         string voivodeshipName,
         ImportDataType dataType,
@@ -19,7 +29,7 @@ public class DataConversionService(LaborStatsDbContext dbContext) : IDataConvers
 
         using var workbook = new XLWorkbook(fileStream);
         var worksheet = workbook.Worksheet(1);
-        
+
         string periodFromSheet = worksheet.Name.Trim();
 
         var headerRow = worksheet.Row(2);
@@ -31,8 +41,8 @@ public class DataConversionService(LaborStatsDbContext dbContext) : IDataConvers
             headerMap[headerText] = col;
         }
 
-        int powiatCol = FindColumnIndex(headerMap, "POWIAT");
-        int professionCol = FindColumnIndex(headerMap, "KOD ZAWODU");
+        int powiatCol = FindColumnIndex(headerMap, PowiatColumn);
+        int professionCol = FindColumnIndex(headerMap, OccupationCodeColumn);
 
         int allContractsCol = 0;
         int over2YearsCol = 0;
@@ -40,16 +50,16 @@ public class DataConversionService(LaborStatsDbContext dbContext) : IDataConvers
 
         if (dataType == ImportDataType.Employed)
         {
-            allContractsCol = FindColumnIndex(headerMap, "WSZYSTKICH UMÓW");
-            over2YearsCol = FindColumnIndex(headerMap, "POWYŻEJ 2 LAT");
+            allContractsCol = FindColumnIndex(headerMap, AllContractsColumn);
+            over2YearsCol = FindColumnIndex(headerMap, Over2YearsColumn);
         }
         else if (dataType == ImportDataType.NewlyHired)
         {
-            newlyRegisteredCol = FindColumnIndex(headerMap, "NOWO ZAREJESTROWANY");
+            newlyRegisteredCol = FindColumnIndex(headerMap, NewlyRegisteredColumn);
         }
 
         var counties = await dbContext.Counties
-            .Where(c => c.Voivodeship.Name == voivodeshipName) 
+            .Where(c => c.Voivodeship.Name == voivodeshipName)
             .ToDictionaryAsync(c => c.Name.ToLower().Trim(), c => c.Teryt, cancellationToken);
 
         var professionsByCode = await dbContext.Profession
@@ -85,19 +95,19 @@ public class DataConversionService(LaborStatsDbContext dbContext) : IDataConvers
             if (allContractsCol > 0)
             {
                 int val = ParseFlexibleNumber(row.Cell(allContractsCol));
-                resultList.Add(CreateRow(countyId, professionId, val, periodFromSheet, "INSURED_ALL_CONTRACTS"));
+                resultList.Add(CreateRow(countyId, professionId, val, periodFromSheet, InsuredAllContracts));
             }
 
             if (over2YearsCol > 0)
             {
                 int val = ParseFlexibleNumber(row.Cell(over2YearsCol));
-                resultList.Add(CreateRow(countyId, professionId, val, periodFromSheet, "INSURED_OVER_2_YEARS"));
+                resultList.Add(CreateRow(countyId, professionId, val, periodFromSheet, InsuredOver2Years));
             }
 
             if (newlyRegisteredCol > 0)
             {
                 int val = ParseFlexibleNumber(row.Cell(newlyRegisteredCol));
-                resultList.Add(CreateRow(countyId, professionId, val, periodFromSheet, "INSURED_NEWLY_REGISTERED"));
+                resultList.Add(CreateRow(countyId, professionId, val, periodFromSheet, InsuredNewlyRegistered));
             }
         }
 
