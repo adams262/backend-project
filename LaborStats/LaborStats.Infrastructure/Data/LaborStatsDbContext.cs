@@ -27,6 +27,8 @@ public sealed class LaborStatsDbContext : DbContext
     public DbSet<LaborStatRecord> LaborStatRecords => Set<LaborStatRecord>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    public DbSet<Offers> Offers => Set<Offers>();
+
     public LaborStatsDbContext(DbContextOptions<LaborStatsDbContext> options)
         : base(options)
     {
