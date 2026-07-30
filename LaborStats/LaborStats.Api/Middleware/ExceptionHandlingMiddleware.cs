@@ -122,6 +122,7 @@ namespace LaborStats.Api.Middleware
         {
             NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
             ConflictException => ((int)HttpStatusCode.Conflict, "Conflict"),
+            ImportAlreadyExistsException => ((int)HttpStatusCode.Conflict, "Import already exists"),
             ImportValidationException => ((int)HttpStatusCode.BadRequest, "Import validation failed"),
             UnauthorizedException => ((int)HttpStatusCode.Unauthorized, "Unauthorized"),
             ValidationException => ((int)HttpStatusCode.BadRequest, "Validation error"),
