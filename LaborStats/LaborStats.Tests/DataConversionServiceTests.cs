@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using LaborStats.Application.Imports.Dtos;
 using LaborStats.Infrastructure.Data;
 using LaborStats.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -58,7 +59,7 @@ public class DataConversionServiceTests
         }
         stream.Position = 0; 
 
-        var result = await service.ConvertAsync(stream, CancellationToken.None);
+        var result = await service.ConvertAsync(stream, "WIELKOPOLSKIE", ImportDataType.Employed, CancellationToken.None);
 
         Assert.NotNull(result);
         Assert.NotEmpty(result);
