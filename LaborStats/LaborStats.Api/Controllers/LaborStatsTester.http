@@ -1,0 +1,56 @@
+@HostAddress = http://localhost:5258
+@AdminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjAxOWZjY2M5LTRkNDAtNzgwNi04NGMxLWQxMzViMDYwMzQyOCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJUZXN0QWRtaW4iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4NTg0ODI5NywiaXNzIjoiTGFib3JTdGF0cy5BcGkiLCJhdWQiOiJMYWJvclN0YXRzLkNsaWVudCJ9.yCgD-apW5GNHEUnwSG2O0Gf-Li4grb15zjd_xHh7DoI
+@BaseUserToken = WPISZ_TUTAJ_TOKEN_BASEUSER
+@ImportId = 019fcdc3-3fa0-735e-bc59-f3b5400e935c
+
+### 1. Admin login
+POST {{HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "Login": "TestAdmin",
+  "Password": "IntegrationTest123"
+}
+
+### 2. File Input (Admin Only)
+POST {{HostAddress}}/api/imports
+Authorization: Bearer {{AdminToken}}
+Content-Type: multipart/form-data; boundary=boundary_string
+
+--boundary_string
+Content-Disposition: form-data; name="File"; filename="DO KONWERTERA - NOWO.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./DO\ KONWERTERA\ -\ NOWO.xlsx
+--boundary_string
+Content-Disposition: form-data; name="Voivodeship"
+
+Małopolskie
+--boundary_string
+Content-Disposition: form-data; name="Year"
+
+2023
+--boundary_string
+Content-Disposition: form-data; name="Period"
+
+1
+--boundary_string
+Content-Disposition: form-data; name="DataType"
+
+2
+--boundary_string--
+
+### 3. Import List Download (Admin Only)
+GET {{HostAddress}}/api/imports
+Authorization: Bearer {{AdminToken}}
+Accept: application/json
+
+### 4. Import Details Download (Admin Only)
+GET {{HostAddress}}/api/imports/{{ImportId}}
+Authorization: Bearer {{AdminToken}}
+Accept: application/json
+
+### 5. Download Records for selected import
+GET {{HostAddress}}/api/imports/{{ImportId}}/records
+Authorization: Bearer {{AdminToken}}
+Accept: application/json
