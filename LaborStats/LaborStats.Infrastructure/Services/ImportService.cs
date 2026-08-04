@@ -12,10 +12,10 @@ public class ImportService(
     IDataConversionService dataConversionService,
     LaborStatsDbContext dbContext) : IImportService
 {
-
     private const string InsuredAllContracts = "INSURED_ALL_CONTRACTS";
     private const string InsuredOver2Years = "INSURED_OVER_2_YEARS";
     private const string InsuredNewlyRegistered = "INSURED_NEWLY_REGISTERED";
+
     public async Task ProcessImportAsync(
         ImportRequestDto request,
         string username,
@@ -27,7 +27,12 @@ public class ImportService(
         var validationResult = await importValidator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
-            throw new ImportValidationException(validationResult.Errors);
+            var criticalErrors = validationResult.Errors.Where(e => e.RowNumber == null).ToList();
+            if (criticalErrors.Count > 0)
+            {
+                throw new ImportValidationException(validationResult.Errors);
+            }
+        
         }
 
         var convertedRows = await ConvertFileAsync(request, cancellationToken);
