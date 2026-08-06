@@ -27,6 +27,7 @@
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageVersion Include="Respawn" Version="7.0.0" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.16.11" />
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="9.0.18" />
     <PackageVersion Include="Testcontainers" Version="4.13.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />

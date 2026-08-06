@@ -77,12 +77,9 @@ public sealed class AuthService(LaborStatsDbContext context, IOptions<JwtOptions
             .ThenInclude(u => u.Role)
             .FirstOrDefaultAsync(t => t.TokenHash == hashedToken, cancellationToken);
 
-        var isTokenInvalid =
-            tokenEntity is null ||
+        if (tokenEntity is null ||
             tokenEntity.ExpiresAt <= now ||
-            tokenEntity.RevokedAt is not null;
-
-        if (isTokenInvalid)
+            tokenEntity.RevokedAt is not null)
         {
             return null;
         }

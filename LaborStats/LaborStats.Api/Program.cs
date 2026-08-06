@@ -32,6 +32,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 builder.Services.AddScoped<IImportService, ImportService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleRequestValidator>();
