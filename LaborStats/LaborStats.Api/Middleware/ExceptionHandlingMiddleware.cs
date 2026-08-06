@@ -1,5 +1,4 @@
-﻿
-using System.Net;
+﻿using System.Net;
 using FluentValidation;
 using LaborStats.Application.Imports;
 using LaborStats.Domain.Exceptions;
@@ -7,11 +6,19 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LaborStats.Api.Middleware
 {
+    /// <summary>
+    /// Middleware for global exception handling and formatting them into ProblemDetails responses.
+    /// </summary>
     public class ExceptionHandlingMiddleware : IMiddleware
     {
         private readonly ILogger<ExceptionHandlingMiddleware> _logger;
         private readonly IHostEnvironment _environment;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExceptionHandlingMiddleware"/> class.
+        /// </summary>
+        /// <param name="logger">The logger instance.</param>
+        /// <param name="environment">The host environment instance.</param>
         public ExceptionHandlingMiddleware(
             ILogger<ExceptionHandlingMiddleware> logger,
             IHostEnvironment environment)
@@ -20,6 +27,7 @@ namespace LaborStats.Api.Middleware
             _environment = environment;
         }
 
+        /// <inheritdoc />
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             try

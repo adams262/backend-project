@@ -1,15 +1,21 @@
-﻿
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-
 namespace LaborStats.Api.OpenApi;
 
+/// <summary>
+/// OpenAPI document transformer that adds JWT Bearer security scheme and requirements to the generated specification.
+/// </summary>
+/// <remarks>
+/// Initializes a new instance of the <see cref="JwtBearerSchemeTransformer"/> class.
+/// </remarks>
+/// <param name="authenticationSchemeProvider">The authentication scheme provider.</param>
 public sealed class JwtBearerSchemeTransformer(
     IAuthenticationSchemeProvider authenticationSchemeProvider) : IOpenApiDocumentTransformer
 {
+    /// <inheritdoc />
     public async Task TransformAsync(
         OpenApiDocument document,
         OpenApiDocumentTransformerContext context,
